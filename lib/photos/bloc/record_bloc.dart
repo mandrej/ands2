@@ -62,10 +62,10 @@ class RecordBloc extends Bloc<RecordEvent, RecordState> {
       if (records.isEmpty) {
         return emit(state.copyWith(hasReachedMax: true));
       }
-      if (findState is FindUpdated) {
-        state.records.clear();
-        // add(RecordClear());
-      }
+      // if (findState is FindUpdated || findState is FindInitial) {
+      //   state.records.clear();
+      //   // add(RecordClear());
+      // }
 
       emit(
         state.copyWith(

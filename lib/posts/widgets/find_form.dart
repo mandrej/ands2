@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show FilteringTextInputFormatter;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_infinite_list/find/cubit/find_cubit.dart';
+import 'package:flutter_infinite_list/photos/bloc/record_bloc.dart';
 
 class FindForm extends StatefulWidget {
   const FindForm({super.key});
@@ -58,6 +59,7 @@ class _FindFormState extends State<FindForm> {
                       icon: const Icon(Icons.clear),
                       onPressed: () {
                         yearController.clear();
+                        context.read<RecordBloc>().add(RecordClear());
                         context.read<FindCubit>().findChange('year', null);
                       },
                     ),
@@ -89,6 +91,7 @@ class _FindFormState extends State<FindForm> {
                       icon: const Icon(Icons.clear),
                       onPressed: () {
                         monthController.clear();
+                        context.read<RecordBloc>().add(RecordClear());
                         context.read<FindCubit>().findChange('month', null);
                       },
                     ),
@@ -116,6 +119,7 @@ class _FindFormState extends State<FindForm> {
                   onPressed: () {
                     if (_formKey.currentState!.validate()) {
                       _formKey.currentState?.save();
+                      context.read<RecordBloc>().add(RecordClear());
                       // context.read<FindCubit>().findChange(
                       //   'year',
                       //   int.tryParse(yearController.text),
