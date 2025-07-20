@@ -1,0 +1,63 @@
+import 'package:equatable/equatable.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_infinite_list/auth/models/user.dart' as my;
+import 'package:hydrated_bloc/hydrated_bloc.dart';
+
+part 'user_event.dart';
+part 'user_state.dart';
+
+class UserBloc extends HydratedBloc<UserEvent, UserState> {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  UserBloc() : super(UserInitial()) {
+    on<UserSignInRequested>(_onSignInRequested);
+    on<UserSignOutRequested>(_onSignOutRequested);
+  }
+
+  Future<void> _onSignInRequested(
+    UserSignInRequested event,
+    Emitter<UserState> emit,
+  ) async {
+    try {
+      // Google sign-in with popup (web only)
+      final googleProvider = GoogleAuthProvider();
+      final userCredential = await _auth.signInWithPopup(googleProvider);
+      final firebaseUser = userCredential.user;
+      if (firebaseUser != null) {
+        final email = firebaseUser.email ?? '';
+        final isAdmin = admins.contains(email);
+        final isFamily = family.contains(email);
+        final user = my.User(
+          uid: firebaseUser.uid,
+          email: email,
+          displayName: firebaseUser.displayName ?? '',
+          isAuthenticated: true,
+          isAdmin: isAdmin,
+          isFamily: isFamily,
+        );
+        emit(UserAuthenticated(user));
+      }
+    } catch (e) {
+      emit(UserInitial());
+    }
+  }
+
+  Future<void> _onSignOutRequested(
+    UserSignOutRequested event,
+    Emitter<UserState> emit,
+  ) async {
+    await _auth.signOut();
+    emit(UserInitial());
+  }
+
+  @override
+  UserState? fromJson(Map<String, dynamic> json) {
+    return UserStateSerialization.fromMap(json);
+  }
+
+  @override
+  Map<String, dynamic>? toJson(UserState state) {
+    // toMap is defined on UserAuthenticated and UserInitial
+    return (state as dynamic).toMap();
+  }
+}

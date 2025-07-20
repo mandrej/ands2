@@ -1,27 +1,27 @@
-part of 'record_bloc.dart';
+part of 'photo_bloc.dart';
 
-enum RecordStatus { initial, success, failure }
+enum PhotoStatus { initial, success, failure }
 
-final class RecordState extends Equatable {
-  const RecordState({
-    this.status = RecordStatus.initial,
-    this.records = const <Record>[],
+final class PhotoState extends Equatable {
+  const PhotoState({
+    this.status = PhotoStatus.initial,
+    this.records = const <Photo>[],
     this.hasReachedMax = false,
     this.fromFilename = '',
   });
 
-  final RecordStatus status;
-  final List<Record> records;
+  final PhotoStatus status;
+  final List<Photo> records;
   final bool hasReachedMax;
   final String fromFilename;
 
-  RecordState copyWith({
-    RecordStatus? status,
-    List<Record>? records,
+  PhotoState copyWith({
+    PhotoStatus? status,
+    List<Photo>? records,
     bool? hasReachedMax,
     String? fromFilename,
   }) {
-    return RecordState(
+    return PhotoState(
       status: status ?? this.status,
       records: records ?? this.records,
       hasReachedMax: hasReachedMax ?? this.hasReachedMax,
@@ -31,7 +31,7 @@ final class RecordState extends Equatable {
 
   @override
   String toString() {
-    return '\n*** RecordState { status: $status, hasReachedMax: $hasReachedMax, records: ${records.length}}';
+    return '\n*** PhotoState { status: $status, hasReachedMax: $hasReachedMax, records: ${records.length}}';
   }
 
   @override

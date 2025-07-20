@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-// import 'package:flutter_infinite_list/posts/posts.dart';
-import 'package:flutter_infinite_list/record/models/record.dart';
+import 'package:flutter_infinite_list/photo/models/photo.dart';
 
 class PostListItem extends StatelessWidget {
-  const PostListItem({required this.post, super.key});
+  const PostListItem({required this.photo, super.key});
 
-  final Record post;
+  final Photo photo;
 
   @override
   Widget build(BuildContext context) {
@@ -18,12 +17,12 @@ class PostListItem extends StatelessWidget {
           maxWidth: 64,
           maxHeight: 64,
         ),
-        child: Image.network(post.thumb, fit: BoxFit.cover),
+        child: Image.network(photo.thumb, fit: BoxFit.cover),
       ),
       // leading: Text('${post.filename}', style: textTheme.bodySmall),
-      title: Text(post.headline),
+      title: Text(photo.headline),
       isThreeLine: true,
-      subtitle: Text(post.filename),
+      subtitle: Text(photo.filename),
       dense: true,
     );
   }

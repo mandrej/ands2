@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_infinite_list/record/bloc/record_bloc.dart';
+import 'package:flutter_infinite_list/photo/bloc/photo_bloc.dart';
 import 'package:flutter_infinite_list/posts/widgets/bottom_loader.dart';
 import 'package:flutter_infinite_list/posts/widgets/post_list_item.dart';
 // import 'package:flutter_infinite_list/records/records.dart';
@@ -23,12 +23,12 @@ class _PostsListState extends State<PostsList> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<RecordBloc, RecordState>(
+    return BlocBuilder<PhotoBloc, PhotoState>(
       builder: (context, state) {
         switch (state.status) {
-          case RecordStatus.failure:
+          case PhotoStatus.failure:
             return const Center(child: Text('failed to fetch records'));
-          case RecordStatus.success:
+          case PhotoStatus.success:
             if (state.records.isEmpty) {
               return const Center(child: Text('no records'));
             }
@@ -36,7 +36,7 @@ class _PostsListState extends State<PostsList> {
               itemBuilder: (BuildContext context, int index) {
                 return index >= state.records.length
                     ? const BottomLoader()
-                    : PostListItem(post: state.records[index]);
+                    : PostListItem(photo: state.records[index]);
               },
               itemCount:
                   state.hasReachedMax
@@ -44,7 +44,7 @@ class _PostsListState extends State<PostsList> {
                       : state.records.length + 1,
               controller: _scrollController,
             );
-          case RecordStatus.initial:
+          case PhotoStatus.initial:
             return const Center(child: CircularProgressIndicator());
         }
       },
@@ -58,7 +58,7 @@ class _PostsListState extends State<PostsList> {
   }
 
   void _onScroll() {
-    if (_isBottom) context.read<RecordBloc>().add(RecordFetched());
+    if (_isBottom) context.read<PhotoBloc>().add(PhotoFetched());
   }
 
   bool get _isBottom {
