@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 // import 'package:flutter_infinite_list/posts/posts.dart';
-import 'package:flutter_infinite_list/photos/models/record.dart';
+import 'package:flutter_infinite_list/record/models/record.dart';
 
 class PostListItem extends StatelessWidget {
   const PostListItem({required this.post, super.key});

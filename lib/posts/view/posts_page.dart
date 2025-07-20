@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_infinite_list/find/cubit/find_cubit.dart';
-import 'package:flutter_infinite_list/photos/bloc/record_bloc.dart';
+import 'package:flutter_infinite_list/record/bloc/record_bloc.dart';
 import 'package:flutter_infinite_list/posts/view/posts_list.dart';
 import 'package:flutter_infinite_list/posts/widgets/find_form.dart';
 

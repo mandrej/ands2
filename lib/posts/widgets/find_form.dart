@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show FilteringTextInputFormatter;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_infinite_list/find/cubit/find_cubit.dart';
-import 'package:flutter_infinite_list/photos/bloc/record_bloc.dart';
+import 'package:flutter_infinite_list/record/bloc/record_bloc.dart';
 
 class FindForm extends StatefulWidget {
   const FindForm({super.key});
