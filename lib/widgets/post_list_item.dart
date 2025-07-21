@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_infinite_list/photo/models/photo.dart';
+import '../photo/models/photo.dart';
 
 class PostListItem extends StatelessWidget {
   const PostListItem({required this.photo, super.key});

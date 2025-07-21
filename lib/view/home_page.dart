@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:flutter_infinite_list/values/bloc/available_values_bloc.dart';
-import 'package:flutter_infinite_list/photo/cubit/last_photo_cubit.dart';
-import 'package:flutter_infinite_list/photo/cubit/first_photo_cubit.dart';
-import 'package:flutter_infinite_list/auth/bloc/user_bloc.dart';
-import 'package:flutter_infinite_list/helpers/common.dart';
+import '../values/bloc/available_values_bloc.dart';
+import '../photo/cubit/last_photo_cubit.dart';
+import '../photo/cubit/first_photo_cubit.dart';
+import '../auth/bloc/user_bloc.dart';
+import '../helpers/common.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key, required this.title});

@@ -1,8 +1,9 @@
+import 'dart:typed_data';
+
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:exif/exif.dart';
-import 'dart:typed_data';
-import 'common.dart';
 import 'package:intl/intl.dart';
+import 'common.dart';
 
 double handleRatio(IfdValues val) {
   final r = val.toList().first;

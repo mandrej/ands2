@@ -1,8 +1,8 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:equatable/equatable.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
-import 'package:flutter_infinite_list/values/models/values.dart';
-import 'package:flutter_infinite_list/helpers/common.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../helpers/common.dart';
+import '../models/values.dart';
 
 part 'available_values_event.dart';
 part 'available_values_state.dart';

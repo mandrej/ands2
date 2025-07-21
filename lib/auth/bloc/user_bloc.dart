@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter_infinite_list/auth/models/user.dart' as my;
 import 'package:hydrated_bloc/hydrated_bloc.dart';
+import '../models/user.dart' as my;
 
 part 'user_event.dart';
 part 'user_state.dart';

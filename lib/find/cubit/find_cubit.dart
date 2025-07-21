@@ -1,6 +1,6 @@
 import 'package:hydrated_bloc/hydrated_bloc.dart';
-import 'package:flutter_infinite_list/find/models/find.dart';
 import 'package:equatable/equatable.dart';
+import '../models/find.dart';
 
 part 'find_state.dart';
 

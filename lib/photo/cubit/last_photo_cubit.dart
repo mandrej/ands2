@@ -1,7 +1,7 @@
 import 'package:bloc/bloc.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:equatable/equatable.dart';
-import 'package:flutter_infinite_list/photo/models/photo.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../models/photo.dart';
 
 part 'last_photo_state.dart';
 
