@@ -25,100 +25,94 @@ class _ListPageState extends State<ListPage> {
 
   final Widget drawerContent = Builder(
     builder: (context) {
-      return MultiBlocProvider(
-        providers: [
-          BlocProvider<FindCubit>(create: (context) => FindCubit()),
-          BlocProvider<PhotoBloc>(
-            create:
-                (_) =>
-                    PhotoBloc(context.read<FindCubit>())..add(PhotoFetched()),
+      return Column(
+        children: [
+          FindForm(),
+          // EditView(),
+          Spacer(),
+          _SidebarItem(
+            icon: Icons.home,
+            label: 'Home',
+            onTap: () => Navigator.pushNamed(context, '/'),
           ),
+          _SidebarItem(
+            icon: Icons.add,
+            label: 'Add',
+            onTap: () => Navigator.pushNamed(context, '/add'),
+          ),
+          _SidebarItem(
+            icon: Icons.settings,
+            label: 'Admin',
+            onTap: () => Navigator.pushNamed(context, '/admin'),
+          ),
+          SizedBox(height: 8.0),
         ],
-        child: Column(
-          children: [
-            FindForm(),
-            // EditView(),
-            Spacer(),
-            _SidebarItem(
-              icon: Icons.home,
-              label: 'Home',
-              onTap: () => Navigator.pushNamed(context, '/'),
-            ),
-            _SidebarItem(
-              icon: Icons.add,
-              label: 'Add',
-              onTap: () => Navigator.pushNamed(context, '/add'),
-            ),
-            _SidebarItem(
-              icon: Icons.settings,
-              label: 'Admin',
-              onTap: () => Navigator.pushNamed(context, '/admin'),
-            ),
-            SizedBox(height: 8.0),
-          ],
-        ),
       );
     },
   );
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        bool isLargeScreen = constraints.maxWidth >= 600;
+    return BlocProvider<FindCubit>(
+      create: (context) => FindCubit(),
+      child: BlocProvider<PhotoBloc>(
+        create:
+            (context) =>
+                PhotoBloc(context.read<FindCubit>())..add(PhotoFetched()),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            bool isLargeScreen = constraints.maxWidth >= 600;
 
-        return BlocProvider(
-          create:
-              (_) => PhotoBloc(context.read<FindCubit>())..add(PhotoFetched()),
-          child: Scaffold(
-            appBar: AppBar(title: Text(widget.title)),
-            drawer: isLargeScreen ? null : Drawer(child: drawerContent),
-            body: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (isLargeScreen)
-                  Container(
-                    width: 250,
-                    color: Theme.of(context).colorScheme.surface,
-                    child: drawerContent,
+            return Scaffold(
+              appBar: AppBar(title: Text(widget.title)),
+              drawer: isLargeScreen ? null : Drawer(child: drawerContent),
+              body: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (isLargeScreen)
+                    Container(
+                      width: 250,
+                      color: Theme.of(context).colorScheme.surface,
+                      child: drawerContent,
+                    ),
+                  Expanded(
+                    child: BlocBuilder<PhotoBloc, PhotoState>(
+                      builder: (context, state) {
+                        switch (state.status) {
+                          case PhotoStatus.failure:
+                            return const Center(
+                              child: Text('failed to fetch records'),
+                            );
+                          case PhotoStatus.success:
+                            if (state.records.isEmpty) {
+                              return const Center(child: Text('no records'));
+                            }
+                            return ListView.builder(
+                              itemBuilder: (BuildContext context, int index) {
+                                return index >= state.records.length
+                                    ? const BottomLoader()
+                                    : PostListItem(photo: state.records[index]);
+                              },
+                              itemCount:
+                                  state.hasReachedMax
+                                      ? state.records.length
+                                      : state.records.length + 1,
+                              controller: _scrollController,
+                            );
+                          case PhotoStatus.initial:
+                            return const Center(
+                              child: CircularProgressIndicator(),
+                            );
+                        }
+                      },
+                    ),
                   ),
-                Expanded(
-                  child: BlocBuilder<PhotoBloc, PhotoState>(
-                    builder: (context, state) {
-                      switch (state.status) {
-                        case PhotoStatus.failure:
-                          return const Center(
-                            child: Text('failed to fetch records'),
-                          );
-                        case PhotoStatus.success:
-                          if (state.records.isEmpty) {
-                            return const Center(child: Text('no records'));
-                          }
-                          return ListView.builder(
-                            itemBuilder: (BuildContext context, int index) {
-                              return index >= state.records.length
-                                  ? const BottomLoader()
-                                  : PostListItem(photo: state.records[index]);
-                            },
-                            itemCount:
-                                state.hasReachedMax
-                                    ? state.records.length
-                                    : state.records.length + 1,
-                            controller: _scrollController,
-                          );
-                        case PhotoStatus.initial:
-                          return const Center(
-                            child: CircularProgressIndicator(),
-                          );
-                      }
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+                ],
+              ),
+            );
+          },
+        ),
+      ),
     );
   }
 
