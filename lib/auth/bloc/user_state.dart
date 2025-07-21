@@ -22,7 +22,11 @@ abstract class UserState extends Equatable {
   List<Object?> get props => [];
 }
 
-class UserInitial extends UserState {}
+class UserInitial extends UserState {
+  const UserInitial();
+
+  Map<String, dynamic> toMap() => {'status': 'initial'};
+}
 
 class UserAuthenticated extends UserState {
   final my.User user;

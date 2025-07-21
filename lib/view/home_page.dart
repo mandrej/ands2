@@ -205,10 +205,9 @@ class FrontWelcome extends StatelessWidget {
               },
             ),
             SizedBox(height: 16.0),
-            BlocConsumer<UserBloc, UserState>(
-              listener: (context, state) {},
-              builder: (context, auth) {
-                if (auth is UserAuthenticated) {
+            BlocBuilder<UserBloc, UserState>(
+              builder: (context, state) {
+                if (state is UserAuthenticated) {
                   return Column(
                     children: [
                       IconButton(
@@ -253,7 +252,7 @@ class FrontWelcome extends StatelessWidget {
                         onPressed: () {
                           context.read<UserBloc>().add(UserSignOutRequested());
                         },
-                        child: Text('Sign out ${auth.user.displayName}'),
+                        child: Text('Sign out ${state.user.displayName}'),
                       ),
                     ],
                   );
