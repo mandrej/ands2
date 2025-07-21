@@ -7,6 +7,8 @@ import 'package:flutter_infinite_list/helpers/common.dart';
 part 'available_values_event.dart';
 part 'available_values_state.dart';
 
+enum AvailableValuesStatus { initial, loading, success, error }
+
 const months = {
   'January': 1,
   'February': 2,
@@ -37,14 +39,15 @@ Future<Values?> getValues(String kind) async {
         } else {
           result[d['field']]!.addAll({d['value']: d['count']});
         }
-        if (result['email'] != null) {
-          result['nick'] = {};
-          result['email']?.forEach((key, value) {
-            result['nick']![nickEmail(key)] = value;
-          });
-        }
-        result['month'] = months;
       }
+      // Only build 'nick' and 'month' once after all docs are processed
+      if (result['email'] != null) {
+        result['nick'] = {};
+        result['email']?.forEach((key, value) {
+          result['nick']![nickEmail(key)] = value;
+        });
+      }
+      result['month'] = months;
     }
   } catch (e) {
     print('Error completing: $e');
@@ -66,7 +69,13 @@ Future<Values?> getValues(String kind) async {
 
 class AvailableValuesBloc
     extends HydratedBloc<AvailableValuesEvent, AvailableValuesState> {
-  AvailableValuesBloc() : super(AvailableValuesState(loading: false)) {
+  AvailableValuesBloc()
+    : super(
+        AvailableValuesState(
+          status: AvailableValuesStatus.initial,
+          loading: false,
+        ),
+      ) {
     on<FetchAvailableValues>(_onFetchAvailableValues);
   }
 
@@ -74,12 +83,31 @@ class AvailableValuesBloc
     FetchAvailableValues event,
     Emitter<AvailableValuesState> emit,
   ) async {
-    emit(AvailableValuesState(loading: true));
+    emit(
+      state.copyWith(
+        status: AvailableValuesStatus.loading,
+        loading: true,
+        error: null,
+      ),
+    );
     try {
       final values = await getValues('Counter');
-      emit(AvailableValuesState(values: values, loading: false));
+      emit(
+        state.copyWith(
+          values: values,
+          status: AvailableValuesStatus.success,
+          loading: false,
+          error: null,
+        ),
+      );
     } catch (e) {
-      emit(AvailableValuesState(loading: false, error: e.toString()));
+      emit(
+        state.copyWith(
+          status: AvailableValuesStatus.error,
+          loading: false,
+          error: e.toString(),
+        ),
+      );
     }
   }
 

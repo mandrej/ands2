@@ -57,7 +57,6 @@ class UserBloc extends HydratedBloc<UserEvent, UserState> {
 
   @override
   Map<String, dynamic>? toJson(UserState state) {
-    // toMap is defined on UserAuthenticated and UserInitial
     return (state as dynamic).toMap();
   }
 }

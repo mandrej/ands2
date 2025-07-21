@@ -19,17 +19,19 @@ class HomePage extends StatelessWidget {
           create:
               (context) => AvailableValuesBloc()..add(FetchAvailableValues()),
         ),
+        BlocProvider<UserBloc>(create: (context) => UserBloc()),
         BlocProvider(create: (context) => LastRecordCubit()..fetchLastRecord()),
         BlocProvider(
           create: (context) => FirstRecordCubit()..fetchFirstRecord(),
         ),
-        BlocProvider<UserBloc>(create: (context) => UserBloc()),
       ],
       child: BlocBuilder<AvailableValuesBloc, AvailableValuesState>(
-        builder: (context, availableValuesState) {
+        builder: (context, state) {
           final double screenWidth = MediaQuery.of(context).size.width;
           final double screenHeight = MediaQuery.of(context).size.height;
-          final bool valuesAvailable = availableValuesState.email != null;
+          final bool valuesAvailable =
+              state.values?.email !=
+              null; // Check if email values are available
           final userState = context.read<UserBloc>().state;
           final bool userSignedIn = userState is UserAuthenticated;
 
@@ -40,11 +42,11 @@ class HomePage extends StatelessWidget {
                       ? (screenWidth < 960
                           ? Column(
                             children: [
-                              FrontButton(
+                              FrontImage(
                                 width: screenWidth,
                                 height: screenHeight / 2,
                               ),
-                              FronTitle(
+                              FrontWelcome(
                                 title: title,
                                 width: screenWidth,
                                 height: screenHeight / 2,
@@ -54,11 +56,11 @@ class HomePage extends StatelessWidget {
                           : Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              FrontButton(
+                              FrontImage(
                                 width: screenWidth / 2,
                                 height: screenHeight,
                               ),
-                              FronTitle(
+                              FrontWelcome(
                                 title: title,
                                 width: screenWidth / 2,
                                 height: screenHeight,
@@ -121,8 +123,8 @@ class HomePage extends StatelessWidget {
   }
 }
 
-class FrontButton extends StatelessWidget {
-  const FrontButton({super.key, required this.width, required this.height});
+class FrontImage extends StatelessWidget {
+  const FrontImage({super.key, required this.width, required this.height});
   final double width, height;
 
   @override
@@ -171,8 +173,8 @@ class FrontButton extends StatelessWidget {
   }
 }
 
-class FronTitle extends StatelessWidget {
-  const FronTitle({
+class FrontWelcome extends StatelessWidget {
+  const FrontWelcome({
     super.key,
     required this.title,
     required this.width,
@@ -221,25 +223,26 @@ class FronTitle extends StatelessWidget {
                         ),
                       ),
                       BlocBuilder<AvailableValuesBloc, AvailableValuesState>(
-                        builder: (context, values) {
-                          if (values.email != null &&
-                              values.email is Map<String, int>) {
+                        builder: (context, state) {
+                          if (state.values != null &&
+                              state.values!.email!.isNotEmpty) {
+                            final emailMap = state.values!.email;
                             return Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children:
-                                  (values.email as Map<String, int>).keys
-                                      .map<Widget>((email) {
-                                        return Padding(
+                                  (emailMap as Map<String, int>).entries
+                                      .map<Widget>(
+                                        (entry) => Padding(
                                           padding: EdgeInsets.all(4.0),
                                           child: Text(
-                                            nickEmail(email),
+                                            nickEmail(entry.key),
                                             style:
                                                 Theme.of(
                                                   context,
                                                 ).textTheme.headlineSmall,
                                           ),
-                                        );
-                                      })
+                                        ),
+                                      )
                                       .toList(),
                             );
                           }
