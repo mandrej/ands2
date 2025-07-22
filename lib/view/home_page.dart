@@ -21,9 +21,6 @@ class HomePage extends StatelessWidget {
         ),
         BlocProvider<UserBloc>(create: (context) => UserBloc()),
         BlocProvider(create: (context) => LastRecordCubit()..fetchLastRecord()),
-        BlocProvider(
-          create: (context) => FirstRecordCubit()..fetchFirstRecord(),
-        ),
       ],
       child: BlocBuilder<AvailableValuesBloc, AvailableValuesState>(
         builder: (context, state) {
@@ -185,6 +182,9 @@ class FrontWelcome extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    var values = context.read<AvailableValuesBloc>().state;
+    var yearsList = values.year?.keys.toList() ?? [];
+    yearsList.sort();
     return Container(
       width: width,
       height: height,
@@ -194,15 +194,9 @@ class FrontWelcome extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(title, style: TextStyle(fontSize: 40)),
-            BlocBuilder<FirstRecordCubit, FirstRecordState>(
-              builder: (context, state) {
-                return state is FirstRecordLoaded
-                    ? Text(
-                      'Since ${state.photo.year.toString()}',
-                      style: TextStyle(fontSize: 14),
-                    )
-                    : Text('waiting');
-              },
+            Text(
+              'Since ${yearsList.isNotEmpty ? yearsList.first : "---"}',
+              style: TextStyle(fontSize: 14),
             ),
             SizedBox(height: 16.0),
             BlocBuilder<UserBloc, UserState>(

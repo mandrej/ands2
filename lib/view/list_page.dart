@@ -57,8 +57,8 @@ class _ListPageState extends State<ListPage> {
       create: (context) => FindCubit(),
       child: BlocProvider<PhotoBloc>(
         create:
-            (context) =>
-                PhotoBloc(context.read<FindCubit>())..add(PhotoFetched()),
+            (context) => PhotoBloc(context.read<FindCubit>())
+              ..add(PhotoFetched(findState: context.read<FindCubit>().state)),
         child: LayoutBuilder(
           builder: (context, constraints) {
             bool isLargeScreen = constraints.maxWidth >= 600;
