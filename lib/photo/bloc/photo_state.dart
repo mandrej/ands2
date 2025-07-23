@@ -31,7 +31,7 @@ final class PhotoState extends Equatable {
 
   @override
   String toString() {
-    return '\n*** PhotoState { status: $status, hasReachedMax: $hasReachedMax, records: ${records.length}}';
+    return '*** PhotoState { status: $status, hasReachedMax: $hasReachedMax, records: ${records.length}}';
   }
 
   @override

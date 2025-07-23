@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'view/home_page.dart';
 import 'view/list_page.dart';
+import 'examples/auto_suggest_multi_field_example.dart';
 
 class App extends StatelessWidget {
   const App({super.key});

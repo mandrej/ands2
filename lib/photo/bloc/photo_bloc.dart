@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:stream_transform/stream_transform.dart';
 import '../../find/cubit/find_cubit.dart';
+import '../../find/models/find.dart';
 import '../models/photo.dart';
 
 part 'photo_event.dart';
@@ -65,8 +66,8 @@ class PhotoBloc extends Bloc<PhotoEvent, PhotoState> {
           records: [...state.records, ...records],
         ),
       );
-    } catch (_) {
-      // print('error fetching records: $e $s');
+    } catch (e) {
+      print('error fetching records: $e');
       emit(state.copyWith(status: PhotoStatus.failure));
     }
   }
@@ -76,18 +77,30 @@ class PhotoBloc extends Bloc<PhotoEvent, PhotoState> {
     FindState? findState,
   }) async {
     final db = FirebaseFirestore.instance;
-    // print('--findState: ${findState.runtimeType} ${findState!.find}');
 
     Query<Map<String, dynamic>> query = db.collection('Photo');
+    final Find? find = findState?.find;
 
     try {
       query = query.orderBy('date', descending: true);
 
-      if (findState?.find.year != null) {
-        query = query.where('year', isEqualTo: findState?.find.year);
+      if (find!.year != null) {
+        query = query.where('year', isEqualTo: find.year);
       }
-      if (findState?.find.month != null) {
-        query = query.where('month', isEqualTo: findState?.find.month);
+      if (find.month != null) {
+        query = query.where('month', isEqualTo: find.month);
+      }
+      if (find.tags != null && find.tags!.isNotEmpty) {
+        query = query.where('tags', arrayContainsAny: find.tags);
+      }
+      if (find.model != null) {
+        query = query.where('model', isEqualTo: find.model);
+      }
+      if (find.lens != null) {
+        query = query.where('lens', isEqualTo: find.lens);
+      }
+      if (find.nick != null) {
+        query = query.where('nick', isEqualTo: find.nick);
       }
 
       if (fromFilename != null) {

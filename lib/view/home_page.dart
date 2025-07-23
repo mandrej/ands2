@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../values/bloc/available_values_bloc.dart';
 import '../photo/cubit/last_photo_cubit.dart';
-import '../photo/cubit/first_photo_cubit.dart';
 import '../auth/bloc/user_bloc.dart';
 import '../helpers/common.dart';
 
@@ -199,6 +198,16 @@ class FrontWelcome extends StatelessWidget {
               style: TextStyle(fontSize: 14),
             ),
             SizedBox(height: 16.0),
+            // Add button to navigate to the AutoSuggestMultiField example
+            ElevatedButton(
+              onPressed:
+                  () => Navigator.pushNamed(
+                    context,
+                    '/examples/auto_suggest_multi_field',
+                  ),
+              child: const Text('AutoSuggestMultiField Example'),
+            ),
+            const SizedBox(height: 16.0),
             BlocBuilder<UserBloc, UserState>(
               builder: (context, state) {
                 if (state is UserAuthenticated) {
