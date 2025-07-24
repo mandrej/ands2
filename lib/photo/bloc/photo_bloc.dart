@@ -65,10 +65,14 @@ class PhotoBloc extends Bloc<PhotoEvent, PhotoState> {
         return emit(state.copyWith(hasReachedMax: true));
       }
 
+      // If we fetched fewer records than the limit, we've reached the max
+      final hasReachedMax = records.length < _postLimit;
+
       emit(
         state.copyWith(
           status: PhotoStatus.success,
           records: [...state.records, ...records],
+          hasReachedMax: hasReachedMax,
         ),
       );
     } catch (e) {

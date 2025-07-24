@@ -53,70 +53,60 @@ class _ListPageState extends State<ListPage> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<FindCubit>(
-      create: (context) => FindCubit(),
-      child: BlocProvider<PhotoBloc>(
-        create:
-            (context) => PhotoBloc(context.read<FindCubit>())
-              ..add(PhotoFetched(findState: context.read<FindCubit>().state)),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            bool isLargeScreen = constraints.maxWidth >= 600;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        bool isLargeScreen = constraints.maxWidth >= 600;
 
-            return Scaffold(
-              appBar: AppBar(title: Text(widget.title)),
-              drawer: isLargeScreen ? null : Drawer(child: drawerContent),
-              body: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (isLargeScreen)
-                    Container(
-                      width: 250,
-                      color: Theme.of(context).colorScheme.surface,
-                      child: drawerContent,
-                    ),
-                  Expanded(
-                    child: BlocBuilder<PhotoBloc, PhotoState>(
-                      builder: (context, state) {
-                        switch (state.status) {
-                          case PhotoStatus.failure:
-                            return const Center(
-                              child: Text('failed to fetch records'),
-                            );
-                          case PhotoStatus.success:
-                            if (state.records.isEmpty) {
-                              return const Center(child: Text('no records'));
-                            }
-                            return Column(
-                              children: [
-                                Expanded(
-                                  child: SingleChildScrollView(
-                                    controller: _scrollController,
-                                    child: Column(
-                                      children: [
-                                        SimpleGridView(records: state.records),
-                                        if (!state.hasReachedMax)
-                                          const BottomLoader(),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            );
-                          case PhotoStatus.initial:
-                            return const Center(
-                              child: CircularProgressIndicator(),
-                            );
+        return Scaffold(
+          appBar: AppBar(title: Text(widget.title)),
+          drawer: isLargeScreen ? null : Drawer(child: drawerContent),
+          body: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (isLargeScreen)
+                Container(
+                  width: 250,
+                  color: Theme.of(context).colorScheme.surface,
+                  child: drawerContent,
+                ),
+              Expanded(
+                child: BlocBuilder<PhotoBloc, PhotoState>(
+                  builder: (context, state) {
+                    switch (state.status) {
+                      case PhotoStatus.failure:
+                        return const Center(
+                          child: Text('failed to fetch records'),
+                        );
+                      case PhotoStatus.success:
+                        if (state.records.isEmpty) {
+                          return const Center(child: Text('no records'));
                         }
-                      },
-                    ),
-                  ),
-                ],
+                        return Column(
+                          children: [
+                            Expanded(
+                              child: SingleChildScrollView(
+                                controller: _scrollController,
+                                child: Column(
+                                  children: [
+                                    SimpleGridView(records: state.records),
+                                    if (!state.hasReachedMax)
+                                      const BottomLoader(),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      case PhotoStatus.initial:
+                        return const Center(child: CircularProgressIndicator());
+                    }
+                  },
+                ),
               ),
-            );
-          },
-        ),
-      ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -127,7 +117,10 @@ class _ListPageState extends State<ListPage> {
   }
 
   void _onScroll() {
-    if (_isBottom) context.read<PhotoBloc>().add(PhotoFetched());
+    if (_isBottom) {
+      final findState = context.read<FindCubit>().state;
+      context.read<PhotoBloc>().add(PhotoFetched(findState: findState));
+    }
   }
 
   bool get _isBottom {
