@@ -36,6 +36,11 @@ class PhotoBloc extends Bloc<PhotoEvent, PhotoState> {
     );
 
     on<PhotoClear>(_onClear, transformer: throttleDroppable(throttleDuration));
+
+    on<PhotoDelete>(
+      _onPhotoDelete,
+      transformer: throttleDroppable(throttleDuration),
+    );
   }
 
   void _onClear(PhotoClear event, Emitter<PhotoState> emit) {
@@ -115,6 +120,26 @@ class PhotoBloc extends Bloc<PhotoEvent, PhotoState> {
           .toList();
     } catch (error) {
       throw Exception('error fetching records: $error');
+    }
+  }
+
+  Future<void> _onPhotoDelete(
+    PhotoDelete event,
+    Emitter<PhotoState> emit,
+  ) async {
+    try {
+      final db = FirebaseFirestore.instance;
+      await db.collection('Photo').doc(event.filename).delete();
+
+      // Remove the deleted photo from the state
+      final updatedRecords =
+          state.records
+              .where((photo) => photo.filename != event.filename)
+              .toList();
+      emit(state.copyWith(records: updatedRecords));
+    } catch (e) {
+      print('error deleting record: $e');
+      emit(state.copyWith(status: PhotoStatus.failure));
     }
   }
 }

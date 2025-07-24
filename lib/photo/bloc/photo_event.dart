@@ -17,3 +17,12 @@ class PhotoFetched extends PhotoEvent {
 }
 
 class PhotoClear extends PhotoEvent {}
+
+class PhotoDelete extends PhotoEvent {
+  final String filename;
+
+  const PhotoDelete(this.filename);
+
+  @override
+  List<Object> get props => [filename];
+}

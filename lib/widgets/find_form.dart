@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../values/bloc/available_values_bloc.dart';
 import '../find/cubit/find_cubit.dart';
@@ -40,6 +41,33 @@ class FindForm extends StatelessWidget {
                     options: AvailableValuesBloc().state.tags!.keys.toList(),
                     multiSelect: true, // Enable multi-select for tags
                   ),
+                  FieldConfig(
+                    fieldKey: 'model',
+                    hintText: 'by camera model',
+                    initialValue:
+                        state.find.model != null
+                            ? [state.find.model!]
+                            : <String>[],
+                    options: AvailableValuesBloc().state.model!.keys.toList(),
+                  ),
+                  FieldConfig(
+                    fieldKey: 'lens',
+                    hintText: 'by lens',
+                    initialValue:
+                        state.find.lens != null
+                            ? [state.find.lens!]
+                            : <String>[],
+                    options: AvailableValuesBloc().state.lens!.keys.toList(),
+                  ),
+                  FieldConfig(
+                    fieldKey: 'nick',
+                    hintText: 'by photographer',
+                    initialValue:
+                        state.find.nick != null
+                            ? [state.find.nick!]
+                            : <String>[],
+                    options: AvailableValuesBloc().state.nick!.keys.toList(),
+                  ),
                 ],
                 initialValues: {
                   'year': state.find.year?.toString(),
@@ -51,28 +79,72 @@ class FindForm extends StatelessWidget {
                           )
                           .key,
                   'tags': state.find.tags ?? <String>[],
+                  'model': state.find.model,
+                  'lens': state.find.lens,
+                  'nick': state.find.nick,
                 },
                 onChanged: (values) {
                   context.read<PhotoBloc>().add(PhotoClear());
+                  final findCubit = context.read<FindCubit>();
 
-                  if (values.containsKey('year') && values['year'] != null) {
-                    context.read<FindCubit>().findChange(
-                      'year',
-                      int.tryParse(values['year']!),
-                    );
+                  final yearValue = values['year'];
+                  if (yearValue != null && yearValue.isNotEmpty) {
+                    final parsedYear = int.tryParse(yearValue);
+                    if (parsedYear == null) {
+                      debugPrint('Warning: Invalid year format: $yearValue');
+                    }
+                    findCubit.findChange('year', parsedYear);
+                  } else {
+                    findCubit.findChange('year', null);
                   }
-                  if (values.containsKey('month') && values['month'] != null) {
-                    context.read<FindCubit>().findChange(
-                      'month',
-                      AvailableValuesBloc().state.month![values['month']],
-                    );
+
+                  final monthValue = values['month'];
+                  if (monthValue != null && monthValue.isNotEmpty) {
+                    final availableValues = AvailableValuesBloc().state;
+                    final monthMap = availableValues.month;
+
+                    if (monthMap != null && monthMap.containsKey(monthValue)) {
+                      findCubit.findChange('month', monthMap[monthValue]);
+                    } else {
+                      debugPrint('Warning: Invalid month value: $monthValue');
+                      findCubit.findChange('month', null);
+                    }
+                  } else {
+                    findCubit.findChange('month', null);
                   }
+
                   // Handle tags change (multi-select)
-                  if (values.containsKey('tags')) {
-                    context.read<FindCubit>().findChange(
-                      'tags',
-                      values['tags'],
-                    );
+                  final tagsValue = values['tags'];
+                  if (tagsValue.isNotEmpty) {
+                    findCubit.findChange('tags', tagsValue);
+                  } else {
+                    findCubit.findChange('tags', null);
+                  }
+                  // For tags, we can directly pass the value (even empty list)
+                  // as the Find model handles List<String>? properly
+
+                  // Handle model field (camera model)
+                  final modelValue = values['model'];
+                  if (modelValue != null && modelValue.isNotEmpty) {
+                    findCubit.findChange('model', modelValue);
+                  } else {
+                    findCubit.findChange('model', null);
+                  }
+
+                  // Handle lens field
+                  final lensValue = values['lens'];
+                  if (lensValue != null && lensValue.isNotEmpty) {
+                    findCubit.findChange('lens', lensValue);
+                  } else {
+                    findCubit.findChange('lens', null);
+                  }
+
+                  // Handle nick field (photographer)
+                  final nickValue = values['nick'];
+                  if (nickValue != null && nickValue.isNotEmpty) {
+                    findCubit.findChange('nick', nickValue);
+                  } else {
+                    findCubit.findChange('nick', null);
                   }
                 },
               ),

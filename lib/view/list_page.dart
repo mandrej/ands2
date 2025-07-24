@@ -3,8 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../find/cubit/find_cubit.dart';
 import '../photo/bloc/photo_bloc.dart';
 import '../widgets/bottom_loader.dart';
-import '../widgets/post_list_item.dart';
 import '../widgets/find_form.dart';
+import '../widgets/simple_grid_view.dart';
 
 class ListPage extends StatefulWidget {
   const ListPage({super.key, required this.title});
@@ -87,17 +87,21 @@ class _ListPageState extends State<ListPage> {
                             if (state.records.isEmpty) {
                               return const Center(child: Text('no records'));
                             }
-                            return ListView.builder(
-                              itemBuilder: (BuildContext context, int index) {
-                                return index >= state.records.length
-                                    ? const BottomLoader()
-                                    : PostListItem(photo: state.records[index]);
-                              },
-                              itemCount:
-                                  state.hasReachedMax
-                                      ? state.records.length
-                                      : state.records.length + 1,
-                              controller: _scrollController,
+                            return Column(
+                              children: [
+                                Expanded(
+                                  child: SingleChildScrollView(
+                                    controller: _scrollController,
+                                    child: Column(
+                                      children: [
+                                        SimpleGridView(records: state.records),
+                                        if (!state.hasReachedMax)
+                                          const BottomLoader(),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
                             );
                           case PhotoStatus.initial:
                             return const Center(

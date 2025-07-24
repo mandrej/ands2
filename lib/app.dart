@@ -13,6 +13,8 @@ class App extends StatelessWidget {
       routes: {
         '/': (context) => HomePage(title: 'Andrejeвићи'),
         '/list': (context) => ListPage(title: 'Andrejeвићи'),
+        '/examples/auto_suggest_multi_field':
+            (context) => AutoSuggestMultiFieldExample(),
         // '/list': (context) => ListPage(title: 'Andrejeвићи'),
         // '/add': (context) => TaskManager(),
       },
