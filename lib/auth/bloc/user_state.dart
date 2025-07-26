@@ -18,42 +18,71 @@ final List<String> family = [
 abstract class UserState extends Equatable {
   const UserState();
 
+  bool get isAdmin;
+  bool get isFamily;
+  bool get isEditing;
+
   @override
   List<Object?> get props => [];
 }
 
 class UserInitial extends UserState {
-  const UserInitial();
+  @override
+  final bool isEditing;
+  const UserInitial({this.isEditing = false});
 
-  Map<String, dynamic> toMap() => {'status': 'initial'};
+  @override
+  bool get isAdmin => false;
+
+  @override
+  bool get isFamily => false;
+
+  @override
+  List<Object?> get props => [isEditing];
+
+  Map<String, dynamic> toMap() => {'status': 'initial', 'isEditing': isEditing};
 }
 
 class UserAuthenticated extends UserState {
   final my.User user;
-  const UserAuthenticated(this.user);
+  @override
+  final bool isEditing;
+  const UserAuthenticated(this.user, {this.isEditing = false});
 
   @override
-  List<Object?> get props => [user];
+  bool get isAdmin => user.isAdmin;
+
+  @override
+  bool get isFamily => user.isFamily;
+
+  @override
+  List<Object?> get props => [user, isEditing];
 
   factory UserAuthenticated.fromMap(Map<String, dynamic> map) {
     return UserAuthenticated(
       my.User.fromMap(map['user'] as Map<String, dynamic>),
+      isEditing: map['isEditing'] as bool? ?? false,
     );
   }
 
   Map<String, dynamic> toMap() {
-    return {'status': 'authenticated', 'user': user.toMap()};
+    return {
+      'status': 'authenticated',
+      'user': user.toMap(),
+      'isEditing': isEditing,
+    };
   }
 }
 
 extension UserStateSerialization on UserState {
   static UserState fromMap(Map<String, dynamic>? map) {
-    if (map == null) return UserInitial();
+    if (map == null) return const UserInitial();
     if (map['status'] == 'authenticated' && map['user'] != null) {
       return UserAuthenticated(
         my.User.fromMap(Map<String, dynamic>.from(map['user'])),
+        isEditing: map['isEditing'] as bool? ?? false,
       );
     }
-    return UserInitial();
+    return UserInitial(isEditing: map['isEditing'] as bool? ?? false);
   }
 }

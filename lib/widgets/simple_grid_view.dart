@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-// import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_infinite_list/auth/bloc/user_bloc.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 import 'confirm_delete.dart';
 // import 'edit_dialog.dart';
-// import '../bloc/edit_mode.dart';
 import '../photo/models/photo.dart';
 
 class SimpleGridView extends StatelessWidget {
@@ -65,7 +65,11 @@ class ItemThumbnail extends StatelessWidget {
         child: Builder(
           builder: (context) {
             // Removed EditModeCubit dependency
-            // const bool editMode = false; // Default to non-edit mode
+            final editMode =
+                context
+                    .watch<UserBloc>()
+                    .state
+                    .isEditing; // Default to non-edit mode
             return Card(
               clipBehavior: Clip.antiAliasWithSaveLayer,
               child: Column(
@@ -76,21 +80,21 @@ class ItemThumbnail extends StatelessWidget {
                         aspectRatio: 1,
                         child: Image.network(record.thumb, fit: BoxFit.cover),
                       ),
-                      // if (editMode)
-                      //   Positioned(
-                      //     top: 0,
-                      //     right: 0,
-                      //     child: Container(
-                      //       width: 42,
-                      //       alignment: Alignment.topRight,
-                      //       child: Column(
-                      //         children: [
-                      //           DeleteButton(record: record),
-                      //           EditButton(record: record),
-                      //         ],
-                      //       ),
-                      //     ),
-                      //   ),
+                      if (editMode)
+                        Positioned(
+                          top: 0,
+                          right: 0,
+                          child: Container(
+                            width: 42,
+                            alignment: Alignment.topRight,
+                            child: Column(
+                              children: [
+                                DeleteButton(record: record),
+                                EditButton(record: record),
+                              ],
+                            ),
+                          ),
+                        ),
                       Positioned(
                         bottom: 0,
                         left: 0,
@@ -159,43 +163,45 @@ class _GalleryPhotoViewWrapperState extends State<GalleryPhotoViewWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    return Builder(
-      builder: (context) {
-        // Removed EditModeCubit dependency
-        // const bool editMode = false; // Default to non-edit mode
-        return Scaffold(
-          appBar: AppBar(
-            title: Text(widget.records[currentIndex].headline),
+    return BlocProvider(
+      create: (context) => UserBloc(),
+      child: Builder(
+        builder: (context) {
+          final editMode = context.watch<UserBloc>().state.isEditing;
+          return Scaffold(
+            appBar: AppBar(
+              title: Text(widget.records[currentIndex].headline),
 
-            // actions:
-            // (editMode)
-            //     ? [
-            //       DeleteButton(
-            //         record: widget.records[currentIndex],
-            //         color: Colors.black,
-            //       ),
+              actions:
+                  (editMode)
+                      ? [
+                        DeleteButton(
+                          record: widget.records[currentIndex],
+                          color: Colors.black,
+                        ),
 
-            //       EditButton(
-            //         record: widget.records[currentIndex],
-            //         color: Colors.black,
-            //       ),
-            //     ]
-            //     : null,
-          ),
-          body: Expanded(
-            child: PhotoViewGallery.builder(
-              scrollPhysics: const BouncingScrollPhysics(),
-              builder: _buildItem,
-              itemCount: widget.records.length,
-              loadingBuilder: widget.loadingBuilder,
-              backgroundDecoration: widget.backgroundDecoration,
-              pageController: widget.pageController,
-              onPageChanged: onPageChanged,
-              scrollDirection: widget.scrollDirection,
+                        EditButton(
+                          record: widget.records[currentIndex],
+                          color: Colors.black,
+                        ),
+                      ]
+                      : null,
             ),
-          ),
-        );
-      },
+            body: Expanded(
+              child: PhotoViewGallery.builder(
+                scrollPhysics: const BouncingScrollPhysics(),
+                builder: _buildItem,
+                itemCount: widget.records.length,
+                loadingBuilder: widget.loadingBuilder,
+                backgroundDecoration: widget.backgroundDecoration,
+                pageController: widget.pageController,
+                onPageChanged: onPageChanged,
+                scrollDirection: widget.scrollDirection,
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 

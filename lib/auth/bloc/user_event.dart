@@ -15,3 +15,8 @@ class UserSignOutRequested extends UserEvent {
   @override
   List<Object> get props => [];
 }
+
+class UserEdit extends UserEvent {
+  @override
+  List<Object> get props => [];
+}

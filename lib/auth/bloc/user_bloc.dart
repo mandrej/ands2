@@ -9,9 +9,10 @@ part 'user_state.dart';
 class UserBloc extends HydratedBloc<UserEvent, UserState> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  UserBloc() : super(UserInitial()) {
+  UserBloc() : super(const UserInitial()) {
     on<UserSignInRequested>(_onSignInRequested);
     on<UserSignOutRequested>(_onSignOutRequested);
+    on<UserEdit>(_onUserEdit);
   }
 
   Future<void> _onSignInRequested(
@@ -38,7 +39,7 @@ class UserBloc extends HydratedBloc<UserEvent, UserState> {
         emit(UserAuthenticated(user));
       }
     } catch (e) {
-      emit(UserInitial());
+      emit(const UserInitial());
     }
   }
 
@@ -47,7 +48,21 @@ class UserBloc extends HydratedBloc<UserEvent, UserState> {
     Emitter<UserState> emit,
   ) async {
     await _auth.signOut();
-    emit(UserInitial());
+    emit(const UserInitial());
+  }
+
+  void _onUserEdit(UserEdit event, Emitter<UserState> emit) {
+    final currentState = state;
+    if (currentState is UserAuthenticated) {
+      emit(
+        UserAuthenticated(
+          currentState.user,
+          isEditing: !currentState.isEditing,
+        ),
+      );
+    } else if (currentState is UserInitial) {
+      emit(UserInitial(isEditing: !currentState.isEditing));
+    }
   }
 
   @override
