@@ -16,7 +16,7 @@ class DeleteDialog extends StatelessWidget {
     final findCubit = FindCubit();
 
     return BlocProvider<PhotoBloc>(
-      create: (context) => PhotoBloc(findCubit),
+      create: (context) => PhotoBloc(),
       child: AlertDialog(
         contentPadding: EdgeInsets.all(16),
         title: const Text('Delete'),

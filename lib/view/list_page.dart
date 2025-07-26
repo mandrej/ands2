@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../find/cubit/find_cubit.dart';
 import '../photo/bloc/photo_bloc.dart';
-import '../widgets/bottom_loader.dart';
+import '../widgets/alert_box.dart';
 import '../widgets/find_form.dart';
 import '../widgets/simple_grid_view.dart';
 
@@ -70,37 +70,56 @@ class _ListPageState extends State<ListPage> {
                   child: drawerContent,
                 ),
               Expanded(
-                child: BlocBuilder<PhotoBloc, PhotoState>(
-                  builder: (context, state) {
-                    switch (state.status) {
-                      case PhotoStatus.failure:
-                        return const Center(
-                          child: Text('failed to fetch records'),
-                        );
-                      case PhotoStatus.success:
-                        if (state.records.isEmpty) {
-                          return const Center(child: Text('no records'));
-                        }
-                        return Column(
-                          children: [
-                            Expanded(
-                              child: SingleChildScrollView(
-                                controller: _scrollController,
-                                child: Column(
-                                  children: [
-                                    SimpleGridView(records: state.records),
-                                    if (!state.hasReachedMax)
-                                      const BottomLoader(),
-                                  ],
+                child: BlocListener<FindCubit, FindState>(
+                  listenWhen: (previous, current) {
+                    // Always return true to ensure all state changes are detected
+                    return true;
+                  },
+                  listener: (context, findState) {
+                    // When FindCubit state changes, notify PhotoBloc
+                    print(
+                      'FindCubit state changed: ${findState.find.toString()}',
+                    );
+                    context.read<PhotoBloc>().add(
+                      PhotoFetched(findState: findState),
+                    );
+                  },
+                  child: BlocBuilder<PhotoBloc, PhotoState>(
+                    builder: (context, state) {
+                      switch (state.status) {
+                        case PhotoStatus.failure:
+                          return const AlertBox(
+                            title: 'Error',
+                            content: 'Failed to fetch records.',
+                          );
+                        case PhotoStatus.success:
+                          if (state.records.isEmpty) {
+                            return const AlertBox(
+                              title: 'No Records',
+                              content: 'No records found. Please try again.',
+                            );
+                          }
+                          return Column(
+                            children: [
+                              Expanded(
+                                child: SingleChildScrollView(
+                                  controller: _scrollController,
+                                  child: Column(
+                                    children: [
+                                      SimpleGridView(records: state.records),
+                                    ],
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
-                        );
-                      case PhotoStatus.initial:
-                        return const Center(child: CircularProgressIndicator());
-                    }
-                  },
+                            ],
+                          );
+                        case PhotoStatus.initial:
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+                      }
+                    },
+                  ),
                 ),
               ),
             ],
@@ -118,8 +137,12 @@ class _ListPageState extends State<ListPage> {
 
   void _onScroll() {
     if (_isBottom) {
+      final photoState = context.read<PhotoBloc>().state;
       final findState = context.read<FindCubit>().state;
-      context.read<PhotoBloc>().add(PhotoFetched(findState: findState));
+      final lastPhoto = photoState.records.last;
+      context.read<PhotoBloc>().add(
+        PhotoFetched(findState: findState, fromFilename: lastPhoto.filename),
+      );
     }
   }
 
@@ -127,7 +150,7 @@ class _ListPageState extends State<ListPage> {
     if (!_scrollController.hasClients) return false;
     final maxScroll = _scrollController.position.maxScrollExtent;
     final currentScroll = _scrollController.offset;
-    return currentScroll >= (maxScroll * 0.9);
+    return currentScroll >= (maxScroll * 0.7);
   }
 }
 

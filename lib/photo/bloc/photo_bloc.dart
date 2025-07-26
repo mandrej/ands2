@@ -23,13 +23,7 @@ EventTransformer<E> throttleDroppable<E>(Duration duration) {
 }
 
 class PhotoBloc extends Bloc<PhotoEvent, PhotoState> {
-  final FindCubit _findCubit;
-
-  PhotoBloc(this._findCubit) : super(PhotoState(records: <Photo>[])) {
-    _findCubit.stream.listen((state) {
-      add(PhotoFetched(findState: state));
-    });
-
+  PhotoBloc() : super(PhotoState(records: <Photo>[])) {
     on<PhotoFetched>(
       _onFetched,
       transformer: throttleDroppable(throttleDuration),
@@ -44,35 +38,46 @@ class PhotoBloc extends Bloc<PhotoEvent, PhotoState> {
   }
 
   void _onClear(PhotoClear event, Emitter<PhotoState> emit) {
-    emit(state.copyWith(records: <Photo>[], hasReachedMax: false));
+    emit(state.copyWith(records: <Photo>[]));
   }
 
   Future<void> _onFetched(PhotoFetched event, Emitter<PhotoState> emit) async {
     final findState = event.findState;
+    final fromFilename = event.fromFilename;
 
-    if (state.hasReachedMax) return;
+    // Check if filter has changed by comparing with the stored findState
+    bool filterChanged = fromFilename == null;
+
+    if (filterChanged) {
+      // Clear records when filter changes
+      emit(
+        state.copyWith(
+          records: <Photo>[],
+          status: PhotoStatus.initial,
+          findState: findState,
+        ),
+      );
+    }
+
     var records = <Photo>[];
     try {
-      if (state.records.isEmpty) {
+      if (filterChanged || state.records.isEmpty) {
+        // Fetch from the beginning when filter changes or no records exist
         records = await _fetchPhotos(findState: findState);
       } else {
+        // Continue pagination for the same filter
         records = await _fetchPhotos(
-          fromFilename: (state.records.last).filename,
+          fromFilename: fromFilename,
+          // state.records.isNotEmpty ? state.records.last.filename : null,
           findState: findState,
         );
       }
-      if (records.isEmpty) {
-        return emit(state.copyWith(hasReachedMax: true));
-      }
-
-      // If we fetched fewer records than the limit, we've reached the max
-      final hasReachedMax = records.length < _postLimit;
 
       emit(
         state.copyWith(
           status: PhotoStatus.success,
-          records: [...state.records, ...records],
-          hasReachedMax: hasReachedMax,
+          records: filterChanged ? records : [...state.records, ...records],
+          findState: findState,
         ),
       );
     } catch (e) {

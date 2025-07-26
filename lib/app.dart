@@ -4,7 +4,7 @@ import 'package:flutter_infinite_list/find/cubit/find_cubit.dart';
 import 'package:flutter_infinite_list/photo/bloc/photo_bloc.dart';
 import 'view/home_page.dart';
 import 'view/list_page.dart';
-import 'examples/auto_suggest_multi_field_example.dart';
+// import 'examples/auto_suggest_multi_field_example.dart';
 
 class App extends StatelessWidget {
   const App({super.key});
@@ -20,14 +20,17 @@ class App extends StatelessWidget {
               create: (context) => FindCubit(),
               child: BlocProvider<PhotoBloc>(
                 create:
-                    (context) => PhotoBloc(context.read<FindCubit>())..add(
-                      PhotoFetched(findState: context.read<FindCubit>().state),
-                    ),
+                    (context) =>
+                        PhotoBloc()..add(
+                          PhotoFetched(
+                            findState: context.read<FindCubit>().state,
+                          ),
+                        ),
                 child: ListPage(title: 'Andrejeвићи'),
               ),
             ),
-        '/examples/auto_suggest_multi_field':
-            (context) => AutoSuggestMultiFieldExample(),
+        // '/examples/auto_suggest_multi_field':
+        //     (context) => AutoSuggestMultiFieldExample(),
         // '/list': (context) => ListPage(title: 'Andrejeвићи'),
         // '/add': (context) => TaskManager(),
       },

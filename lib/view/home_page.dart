@@ -197,16 +197,6 @@ class FrontWelcome extends StatelessWidget {
               'Since ${yearsList.isNotEmpty ? yearsList.first : "---"}',
               style: TextStyle(fontSize: 14),
             ),
-            SizedBox(height: 16.0),
-            // Add button to navigate to the AutoSuggestMultiField example
-            ElevatedButton(
-              onPressed:
-                  () => Navigator.pushNamed(
-                    context,
-                    '/examples/auto_suggest_multi_field',
-                  ),
-              child: const Text('AutoSuggestMultiField Example'),
-            ),
             const SizedBox(height: 16.0),
             BlocBuilder<UserBloc, UserState>(
               builder: (context, state) {
