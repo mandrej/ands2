@@ -9,8 +9,9 @@ abstract class PhotoEvent extends Equatable {
 
 class PhotoFetched extends PhotoEvent {
   final FindState? findState;
+  final String? fromFilename;
 
-  const PhotoFetched({this.findState});
+  const PhotoFetched({this.findState, this.fromFilename});
 
   @override
   List<Object?> get props => [findState];

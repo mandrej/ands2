@@ -14,24 +14,25 @@ class FindCubit extends HydratedCubit<FindState> {
             : const Find();
     final updatedFind = currentFind.copyWithField(key, value);
 
-    final cleanedJson =
-        updatedFind.toJson()..removeWhere(
-          (k, v) =>
-              v == null ||
-              (v is String && v.isEmpty) ||
-              (v is List && v.isEmpty) ||
-              (v is int && v == 0),
-        );
+    // final cleanedJson =
+    //     updatedFind.toJson()..removeWhere(
+    //       (k, v) =>
+    //           v == null ||
+    //           (v is String && v.isEmpty) ||
+    //           (v is List && v.isEmpty) ||
+    //           (v is int && v == 0),
+    //     );
 
-    // print(cleanedJson.toString());
-    emit(FindUpdated(data: cleanedJson));
+    // print('---cleanedJson ${cleanedJson.toString()}');
+    emit(FindUpdated(data: updatedFind.toJson()));
   }
 
   @override
   FindState? fromJson(Map<String, dynamic> json) {
     try {
-      final cleaned = json..removeWhere((k, v) => v == null);
-      return FindUpdated(data: cleaned);
+      // final cleaned = json..removeWhere((k, v) => v == null);
+      // return FindUpdated(data: cleaned);
+      return FindUpdated(data: json);
     } catch (_) {
       return null;
     }

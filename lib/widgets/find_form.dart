@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../values/bloc/available_values_bloc.dart';
 import '../find/cubit/find_cubit.dart';
@@ -8,6 +7,17 @@ import 'auto_suggest_multi_field.dart';
 
 class FindForm extends StatelessWidget {
   const FindForm({super.key});
+
+  // Helper method to update a field in FindCubit
+  void _updateField(
+    FindCubit cubit,
+    String fieldKey,
+    dynamic value,
+    dynamic Function(dynamic) transform,
+  ) {
+    final transformedValue = transform(value);
+    cubit.findChange(fieldKey, transformedValue);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -84,68 +94,46 @@ class FindForm extends StatelessWidget {
                   'nick': state.find.nick,
                 },
                 onChanged: (values) {
-                  context.read<PhotoBloc>().add(PhotoClear());
                   final findCubit = context.read<FindCubit>();
 
-                  final yearValue = values['year'];
-                  if (yearValue != null && yearValue.isNotEmpty) {
-                    final parsedYear = int.tryParse(yearValue);
-                    if (parsedYear == null) {
-                      debugPrint('Warning: Invalid year format: $yearValue');
+                  // Process each field and update FindCubit
+                  _updateField(findCubit, 'year', values['year'], (value) {
+                    return value != null && value.isNotEmpty
+                        ? int.tryParse(value)
+                        : null;
+                  });
+
+                  _updateField(findCubit, 'month', values['month'], (value) {
+                    if (value != null && value.isNotEmpty) {
+                      final availableValues = AvailableValuesBloc().state;
+                      final monthMap = availableValues.month;
+                      if (monthMap != null && monthMap.containsKey(value)) {
+                        return monthMap[value];
+                      }
                     }
-                    findCubit.findChange('year', parsedYear);
-                  } else {
-                    findCubit.findChange('year', null);
-                  }
+                    return null;
+                  });
 
-                  final monthValue = values['month'];
-                  if (monthValue != null && monthValue.isNotEmpty) {
-                    final availableValues = AvailableValuesBloc().state;
-                    final monthMap = availableValues.month;
-
-                    if (monthMap != null && monthMap.containsKey(monthValue)) {
-                      findCubit.findChange('month', monthMap[monthValue]);
-                    } else {
-                      debugPrint('Warning: Invalid month value: $monthValue');
-                      findCubit.findChange('month', null);
-                    }
-                  } else {
-                    findCubit.findChange('month', null);
-                  }
-
-                  // Handle tags change (multi-select)
+                  // Handle tags specially since it's a list
                   final tagsValue = values['tags'];
-                  if (tagsValue.isNotEmpty) {
-                    findCubit.findChange('tags', tagsValue);
-                  } else {
-                    findCubit.findChange('tags', null);
-                  }
-                  // For tags, we can directly pass the value (even empty list)
-                  // as the Find model handles List<String>? properly
+                  findCubit.findChange('tags', tagsValue ?? <String>[]);
 
-                  // Handle model field (camera model)
-                  final modelValue = values['model'];
-                  if (modelValue != null && modelValue.isNotEmpty) {
-                    findCubit.findChange('model', modelValue);
-                  } else {
-                    findCubit.findChange('model', null);
-                  }
+                  // Handle other string fields
+                  _updateField(findCubit, 'model', values['model'], (value) {
+                    return value != null && value.isNotEmpty ? value : null;
+                  });
 
-                  // Handle lens field
-                  final lensValue = values['lens'];
-                  if (lensValue != null && lensValue.isNotEmpty) {
-                    findCubit.findChange('lens', lensValue);
-                  } else {
-                    findCubit.findChange('lens', null);
-                  }
+                  _updateField(findCubit, 'lens', values['lens'], (value) {
+                    return value != null && value.isNotEmpty ? value : null;
+                  });
 
-                  // Handle nick field (photographer)
-                  final nickValue = values['nick'];
-                  if (nickValue != null && nickValue.isNotEmpty) {
-                    findCubit.findChange('nick', nickValue);
-                  } else {
-                    findCubit.findChange('nick', null);
-                  }
+                  _updateField(findCubit, 'nick', values['nick'], (value) {
+                    return value != null && value.isNotEmpty ? value : null;
+                  });
+
+                  // Explicitly notify PhotoBloc about the change
+                  final photoBloc = context.read<PhotoBloc>();
+                  photoBloc.add(PhotoFetched(findState: findCubit.state));
                 },
               ),
               const SizedBox(height: 16.0),
