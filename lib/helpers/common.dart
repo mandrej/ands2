@@ -25,7 +25,7 @@ List<String> splitFileName(String fileName) {
 
 String thumbFileName(String fileName) {
   var [name, ext] = splitFileName(fileName);
-  return '${name}_400x400.jpeg';
+  return 'thumbnails/${name}_400x400.jpeg';
 }
 
 String prettyJson(Object jsonObject) {

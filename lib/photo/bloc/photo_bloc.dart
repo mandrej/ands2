@@ -3,11 +3,13 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:stream_transform/stream_transform.dart';
 import '../../find/cubit/find_cubit.dart';
 import '../../find/models/find.dart';
+import '../../helpers/common.dart';
 import '../models/photo.dart';
 
 part 'photo_event.dart';
@@ -15,6 +17,12 @@ part 'photo_state.dart';
 
 const _postLimit = 10;
 const throttleDuration = Duration(milliseconds: 100);
+
+final db = FirebaseFirestore.instance;
+final CollectionReference photosRef = FirebaseFirestore.instance.collection(
+  'Photo',
+);
+final storageRef = FirebaseStorage.instance.ref();
 
 EventTransformer<E> throttleDroppable<E>(Duration duration) {
   return (events, mapper) {
@@ -90,13 +98,10 @@ class PhotoBloc extends Bloc<PhotoEvent, PhotoState> {
     String? fromFilename,
     FindState? findState,
   }) async {
-    final db = FirebaseFirestore.instance;
-
-    Query<Map<String, dynamic>> query = db.collection('Photo');
     final Find? find = findState?.find;
 
     try {
-      query = query.orderBy('date', descending: true);
+      Query<Object?> query = photosRef.orderBy('date', descending: true);
 
       if (find!.year != null) {
         query = query.where('year', isEqualTo: find.year);
@@ -118,14 +123,13 @@ class PhotoBloc extends Bloc<PhotoEvent, PhotoState> {
       }
 
       if (fromFilename != null) {
-        DocumentSnapshot from =
-            await db.collection('Photo').doc(fromFilename).get();
+        DocumentSnapshot from = await photosRef.doc(fromFilename).get();
         query = query.startAfterDocument(from);
       }
       query = query.limit(_postLimit);
       final querySnapshot = await query.get();
       return querySnapshot.docs
-          .map((doc) => Photo.fromMap(doc.data()))
+          .map((doc) => Photo.fromMap(doc.data() as Map<String, dynamic>))
           .toList();
     } catch (error) {
       throw Exception('error fetching records: $error');
@@ -136,10 +140,17 @@ class PhotoBloc extends Bloc<PhotoEvent, PhotoState> {
     PhotoDelete event,
     Emitter<PhotoState> emit,
   ) async {
+    final docRef = db.collection('Photo').doc(event.filename);
+    final imageRef = storageRef.child(event.filename);
+    final thumbRef = storageRef.child(thumbFileName(event.filename));
     try {
-      final db = FirebaseFirestore.instance;
-      await db.collection('Photo').doc(event.filename).delete();
-
+      // Delete all resources in parallel for better performance
+      // If any deletion fails, the entire operation will fail
+      await Future.wait([
+        docRef.delete(),
+        imageRef.delete(),
+        thumbRef.delete(),
+      ]);
       // Remove the deleted photo from the state
       final updatedRecords =
           state.records
