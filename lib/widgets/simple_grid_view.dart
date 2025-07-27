@@ -163,45 +163,42 @@ class _GalleryPhotoViewWrapperState extends State<GalleryPhotoViewWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => UserBloc(),
-      child: Builder(
-        builder: (context) {
-          final editMode = context.watch<UserBloc>().state.isEditing;
-          return Scaffold(
-            appBar: AppBar(
-              title: Text(widget.records[currentIndex].headline),
+    return Builder(
+      builder: (context) {
+        final editMode = context.watch<UserBloc>().state.isEditing;
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(widget.records[currentIndex].headline),
 
-              actions:
-                  (editMode)
-                      ? [
-                        DeleteButton(
-                          record: widget.records[currentIndex],
-                          color: Colors.black,
-                        ),
+            actions:
+                (editMode)
+                    ? [
+                      DeleteButton(
+                        record: widget.records[currentIndex],
+                        color: Colors.black,
+                      ),
 
-                        EditButton(
-                          record: widget.records[currentIndex],
-                          color: Colors.black,
-                        ),
-                      ]
-                      : null,
+                      EditButton(
+                        record: widget.records[currentIndex],
+                        color: Colors.black,
+                      ),
+                    ]
+                    : null,
+          ),
+          body: Expanded(
+            child: PhotoViewGallery.builder(
+              scrollPhysics: const BouncingScrollPhysics(),
+              builder: _buildItem,
+              itemCount: widget.records.length,
+              loadingBuilder: widget.loadingBuilder,
+              backgroundDecoration: widget.backgroundDecoration,
+              pageController: widget.pageController,
+              onPageChanged: onPageChanged,
+              scrollDirection: widget.scrollDirection,
             ),
-            body: Expanded(
-              child: PhotoViewGallery.builder(
-                scrollPhysics: const BouncingScrollPhysics(),
-                builder: _buildItem,
-                itemCount: widget.records.length,
-                loadingBuilder: widget.loadingBuilder,
-                backgroundDecoration: widget.backgroundDecoration,
-                pageController: widget.pageController,
-                onPageChanged: onPageChanged,
-                scrollDirection: widget.scrollDirection,
-              ),
-            ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_infinite_list/auth/bloc/user_bloc.dart';
-import 'package:flutter_infinite_list/auth/models/user.dart';
 import '../find/cubit/find_cubit.dart';
 import '../photo/bloc/photo_bloc.dart';
 import '../widgets/alert_box.dart';

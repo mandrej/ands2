@@ -4,11 +4,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:path_provider/path_provider.dart';
 import 'firebase_options.dart';
 import 'simple_bloc_observer.dart';
 import 'app.dart';
+import 'auth/bloc/user_bloc.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,5 +39,7 @@ Future<void> main() async {
   );
 
   Bloc.observer = const SimpleBlocObserver();
-  runApp(App());
+  runApp(
+    BlocProvider<UserBloc>(create: (context) => UserBloc(), child: const App()),
+  );
 }
