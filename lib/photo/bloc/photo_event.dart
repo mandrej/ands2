@@ -27,3 +27,31 @@ class PhotoDelete extends PhotoEvent {
   @override
   List<Object> get props => [filename];
 }
+
+class PhotoAdd extends PhotoEvent {
+  final Photo photo;
+
+  const PhotoAdd(this.photo);
+
+  @override
+  List<Object> get props => [photo];
+}
+
+class PhotoUpdate extends PhotoEvent {
+  final Photo photo;
+
+  const PhotoUpdate(this.photo);
+
+  @override
+  List<Object> get props => [photo];
+}
+
+class PhotoPublish extends PhotoEvent {
+  final Photo photo;
+  final bool isPublished;
+
+  const PhotoPublish(this.photo, this.isPublished);
+
+  @override
+  List<Object> get props => [photo, isPublished];
+}

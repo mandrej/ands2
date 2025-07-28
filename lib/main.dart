@@ -13,6 +13,21 @@ import 'simple_bloc_observer.dart';
 import 'app.dart';
 import 'auth/bloc/user_bloc.dart';
 
+void handleFlutterError(FlutterErrorDetails details) {
+  FlutterError.presentError(details);
+  // Optionally log to a service or file here.
+}
+
+bool handlePlatformError(Object error, StackTrace stack) {
+  // Optionally log to a service or file here.
+  return true; // Prevents the app from crashing.
+}
+
+void setupGlobalErrorHandling() {
+  FlutterError.onError = handleFlutterError;
+  PlatformDispatcher.instance.onError = handlePlatformError;
+}
+
 Future<void> main() async {
   setPathUrlStrategy();
   WidgetsFlutterBinding.ensureInitialized();

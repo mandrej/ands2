@@ -23,6 +23,7 @@ final class Photo extends Equatable {
     this.flash = false,
     this.loc = '',
     this.text = const [],
+    this.published = false,
   });
 
   final String filename;
@@ -46,6 +47,7 @@ final class Photo extends Equatable {
   final bool? flash;
   final String? loc;
   final List<String>? text;
+  final bool published;
 
   @override
   List<Object?> get props => [
@@ -70,7 +72,59 @@ final class Photo extends Equatable {
     flash,
     loc,
     text,
+    published,
   ];
+
+  Photo copyWith({
+    String? filename,
+    String? headline,
+    List<String>? tags,
+    String? email,
+    String? nick,
+    String? url,
+    String? thumb,
+    String? date,
+    int? year,
+    int? month,
+    int? day,
+    int? size,
+    String? model,
+    String? lens,
+    int? focalLength,
+    double? aperture,
+    String? shutter,
+    int? iso,
+    bool? flash,
+    String? loc,
+    List<String>? text,
+    bool? published,
+  }) {
+    return Photo(
+      filename: filename ?? this.filename,
+      headline: headline ?? this.headline,
+      tags: tags ?? this.tags,
+      email: email ?? this.email,
+      nick: nick ?? this.nick,
+      url: url ?? this.url,
+      thumb: thumb ?? this.thumb,
+      date: date ?? this.date,
+      year: year ?? this.year,
+      month: month ?? this.month,
+      day: day ?? this.day,
+      size: size ?? this.size,
+      model: model ?? this.model,
+      lens: lens ?? this.lens,
+      focalLength: focalLength ?? this.focalLength,
+      aperture: aperture ?? this.aperture,
+      shutter: shutter ?? this.shutter,
+      iso: iso ?? this.iso,
+      flash: flash ?? this.flash,
+      loc: loc ?? this.loc,
+      text: text ?? this.text,
+      published: published ?? this.published,
+    );
+  }
+
   Map<String, dynamic> toMap() {
     return {
       'filename': filename,
@@ -94,6 +148,7 @@ final class Photo extends Equatable {
       'flash': flash,
       'loc': loc,
       'text': text,
+      'published': published,
     };
   }
 
@@ -120,6 +175,7 @@ final class Photo extends Equatable {
       flash: map['flash'] as bool?,
       loc: map['loc'] as String?,
       text: map['text']?.cast<String>(),
+      published: map['published'] as bool? ?? false,
     );
   }
 

@@ -18,7 +18,6 @@ part 'photo_state.dart';
 const _postLimit = 10;
 const throttleDuration = Duration(milliseconds: 100);
 
-final db = FirebaseFirestore.instance;
 final CollectionReference photosRef = FirebaseFirestore.instance.collection(
   'Photo',
 );
@@ -41,6 +40,18 @@ class PhotoBloc extends Bloc<PhotoEvent, PhotoState> {
 
     on<PhotoDelete>(
       _onPhotoDelete,
+      transformer: throttleDroppable(throttleDuration),
+    );
+
+    on<PhotoAdd>(_onPhotoAdd, transformer: throttleDroppable(throttleDuration));
+
+    on<PhotoUpdate>(
+      _onPhotoUpdate,
+      transformer: throttleDroppable(throttleDuration),
+    );
+
+    on<PhotoPublish>(
+      _onPhotoPublish,
       transformer: throttleDroppable(throttleDuration),
     );
   }
@@ -140,7 +151,7 @@ class PhotoBloc extends Bloc<PhotoEvent, PhotoState> {
     PhotoDelete event,
     Emitter<PhotoState> emit,
   ) async {
-    final docRef = db.collection('Photo').doc(event.filename);
+    final docRef = photosRef.doc(event.filename);
     final imageRef = storageRef.child(event.filename);
     final thumbRef = storageRef.child(thumbFileName(event.filename));
     try {
@@ -159,6 +170,66 @@ class PhotoBloc extends Bloc<PhotoEvent, PhotoState> {
       emit(state.copyWith(records: updatedRecords));
     } catch (e) {
       print('error deleting record: $e');
+      emit(state.copyWith(status: PhotoStatus.failure));
+    }
+  }
+
+  Future<void> _onPhotoAdd(PhotoAdd event, Emitter<PhotoState> emit) async {
+    final docRef = photosRef.doc(event.photo.filename);
+    try {
+      // Add the photo document to Firestore
+      await docRef.set(event.photo.toMap());
+
+      // Add the new photo to the beginning of the records list
+      final updatedRecords = [event.photo, ...state.records];
+      emit(state.copyWith(records: updatedRecords));
+    } catch (e) {
+      print('error adding record: $e');
+      emit(state.copyWith(status: PhotoStatus.failure));
+    }
+  }
+
+  Future<void> _onPhotoUpdate(
+    PhotoUpdate event,
+    Emitter<PhotoState> emit,
+  ) async {
+    final docRef = photosRef.doc(event.photo.filename);
+    try {
+      // Update the photo document in Firestore
+      await docRef.update(event.photo.toMap());
+
+      // Update the photo in the records list
+      final updatedRecords =
+          state.records.map((photo) {
+            return photo.filename == event.photo.filename ? event.photo : photo;
+          }).toList();
+      emit(state.copyWith(records: updatedRecords));
+    } catch (e) {
+      print('error updating record: $e');
+      emit(state.copyWith(status: PhotoStatus.failure));
+    }
+  }
+
+  Future<void> _onPhotoPublish(
+    PhotoPublish event,
+    Emitter<PhotoState> emit,
+  ) async {
+    final docRef = photosRef.doc(event.photo.filename);
+    try {
+      // Update the published status in Firestore
+      await docRef.update({'published': event.isPublished});
+
+      // Update the photo in the records list
+      final updatedRecords =
+          state.records.map((photo) {
+            if (photo.filename == event.photo.filename) {
+              return photo.copyWith(published: event.isPublished);
+            }
+            return photo;
+          }).toList();
+      emit(state.copyWith(records: updatedRecords));
+    } catch (e) {
+      print('error updating publish status: $e');
       emit(state.copyWith(status: PhotoStatus.failure));
     }
   }
