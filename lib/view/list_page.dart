@@ -84,6 +84,12 @@ class _ListPageState extends State<ListPage> {
                       );
                     },
                     child: BlocBuilder<PhotoBloc, PhotoState>(
+                      buildWhen: (previous, current) {
+                        if (previous.records.length != current.records.length) {
+                          return true;
+                        }
+                        return false;
+                      },
                       builder: (context, state) {
                         switch (state.status) {
                           case PhotoStatus.failure:

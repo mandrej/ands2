@@ -4,6 +4,7 @@ import 'package:flutter_infinite_list/find/cubit/find_cubit.dart';
 import 'package:flutter_infinite_list/photo/bloc/photo_bloc.dart';
 import 'view/home_page.dart';
 import 'view/list_page.dart';
+import 'theme.dart';
 // import 'examples/auto_suggest_multi_field_example.dart';
 
 class App extends StatelessWidget {
@@ -12,6 +13,9 @@ class App extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: ThemeMode.system,
       initialRoute: '/',
       routes: {
         '/': (context) => HomePage(title: 'Andrejeвићи'),
