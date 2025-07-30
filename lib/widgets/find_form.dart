@@ -47,35 +47,22 @@ class FindForm extends StatelessWidget {
                   FieldConfig(
                     fieldKey: 'tags',
                     hintText: 'by tags',
-                    initialValue: state.find.tags ?? <String>[],
                     options: AvailableValuesBloc().state.tags!.keys.toList(),
                     multiSelect: true, // Enable multi-select for tags
                   ),
                   FieldConfig(
                     fieldKey: 'model',
                     hintText: 'by camera model',
-                    initialValue:
-                        state.find.model != null
-                            ? [state.find.model!]
-                            : <String>[],
                     options: AvailableValuesBloc().state.model!.keys.toList(),
                   ),
                   FieldConfig(
                     fieldKey: 'lens',
                     hintText: 'by lens',
-                    initialValue:
-                        state.find.lens != null
-                            ? [state.find.lens!]
-                            : <String>[],
                     options: AvailableValuesBloc().state.lens!.keys.toList(),
                   ),
                   FieldConfig(
                     fieldKey: 'nick',
                     hintText: 'by photographer',
-                    initialValue:
-                        state.find.nick != null
-                            ? [state.find.nick!]
-                            : <String>[],
                     options: AvailableValuesBloc().state.nick!.keys.toList(),
                   ),
                 ],

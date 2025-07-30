@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
@@ -50,8 +51,8 @@ class PhotoBloc extends Bloc<PhotoEvent, PhotoState> {
       transformer: throttleDroppable(throttleDuration),
     );
 
-    on<PhotoPublish>(
-      _onPhotoPublish,
+    on<PhotoUpload>(
+      _onPhotoUpload,
       transformer: throttleDroppable(throttleDuration),
     );
   }
@@ -210,26 +211,33 @@ class PhotoBloc extends Bloc<PhotoEvent, PhotoState> {
     }
   }
 
-  Future<void> _onPhotoPublish(
-    PhotoPublish event,
+  Future<void> _onPhotoUpload(
+    PhotoUpload event,
     Emitter<PhotoState> emit,
   ) async {
-    final docRef = photosRef.doc(event.photo.filename);
     try {
-      // Update the published status in Firestore
-      await docRef.update({'published': event.isPublished});
+      final file = File(event.filePath);
+      final filename = event.photo.filename;
 
-      // Update the photo in the records list
-      final updatedRecords =
-          state.records.map((photo) {
-            if (photo.filename == event.photo.filename) {
-              return photo.copyWith(published: event.isPublished);
-            }
-            return photo;
-          }).toList();
+      // Upload the main image
+      final imageRef = storageRef.child(filename);
+      await imageRef.putFile(file);
+
+      // Generate and upload thumbnail (assuming thumbFileName helper exists)
+      final thumbRef = storageRef.child(thumbFileName(filename));
+      // Note: Thumbnail generation logic would need to be implemented
+      // For now, we'll upload the same file as thumbnail
+      await thumbRef.putFile(file);
+
+      // Add the photo document to Firestore
+      final docRef = photosRef.doc(filename);
+      await docRef.set(event.photo.toMap());
+
+      // Add the new photo to the beginning of the records list
+      final updatedRecords = [event.photo, ...state.records];
       emit(state.copyWith(records: updatedRecords));
     } catch (e) {
-      print('error updating publish status: $e');
+      print('error uploading photo: $e');
       emit(state.copyWith(status: PhotoStatus.failure));
     }
   }

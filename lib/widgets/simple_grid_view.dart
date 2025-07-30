@@ -4,7 +4,7 @@ import 'package:flutter_infinite_list/auth/bloc/user_bloc.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 import 'confirm_delete.dart';
-// import 'edit_dialog.dart';
+import 'edit_dialog.dart';
 import '../photo/models/photo.dart';
 
 class SimpleGridView extends StatelessWidget {
@@ -250,26 +250,20 @@ class EditButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
     return IconButton(
       icon: const Icon(Icons.edit),
       color: color,
       onPressed: () async {
         await showDialog(
           context: context,
-          // EditDialog is not defined, so we'll just close the dialog
-          builder:
-              (context) => AlertDialog(
-                title: const Text('Edit'),
-                content: Text('Editing ${record.headline}'),
-                actions: [
-                  TextButton(
-                    child: const Text('Close'),
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                    },
-                  ),
-                ],
-              ),
+          builder: (context) {
+            if (width <= 600) {
+              return Dialog.fullscreen(child: EditDialog(editRecord: record));
+            } else {
+              return EditDialog(editRecord: record);
+            }
+          },
           barrierDismissible: false,
         );
       },

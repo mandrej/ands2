@@ -46,12 +46,12 @@ class PhotoUpdate extends PhotoEvent {
   List<Object> get props => [photo];
 }
 
-class PhotoPublish extends PhotoEvent {
+class PhotoUpload extends PhotoEvent {
+  final String filePath;
   final Photo photo;
-  final bool isPublished;
 
-  const PhotoPublish(this.photo, this.isPublished);
+  const PhotoUpload({required this.filePath, required this.photo});
 
   @override
-  List<Object> get props => [photo, isPublished];
+  List<Object> get props => [filePath, photo];
 }
