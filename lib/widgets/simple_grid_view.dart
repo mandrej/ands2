@@ -250,19 +250,15 @@ class EditButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
+    // final width = MediaQuery.of(context).size.width;
     return IconButton(
       icon: const Icon(Icons.edit),
       color: color,
-      onPressed: () async {
-        await showDialog(
+      onPressed: () {
+        showDialog(
           context: context,
           builder: (context) {
-            if (width <= 600) {
-              return Dialog.fullscreen(child: EditDialog(editRecord: record));
-            } else {
-              return EditDialog(editRecord: record);
-            }
+            return EditDialog(editRecord: record);
           },
           barrierDismissible: false,
         );
