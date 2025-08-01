@@ -30,6 +30,9 @@ class TaskManager extends StatefulWidget {
 }
 
 class _TaskManagerState extends State<TaskManager> {
+  bool _hasSelectedImages = false;
+  List<XFile> _selectedImages = [];
+
   Future<UploadTask?> uploadFile(XFile? file) async {
     if (file == null) {
       ScaffoldMessenger.of(
@@ -72,10 +75,6 @@ class _TaskManagerState extends State<TaskManager> {
   }
 
   Future<void> handleUploads() async {
-    final uploadTaskCubit = BlocProvider.of<UploadTaskCubit>(
-      context,
-      listen: false,
-    );
     final ImagePicker picker = ImagePicker();
     final List<XFile> images = await picker.pickMultiImage();
     // if (!mounted) return;
@@ -85,112 +84,170 @@ class _TaskManagerState extends State<TaskManager> {
       ).showSnackBar(const SnackBar(content: Text('No file was selected')));
       return;
     }
-    for (var file in images) {
-      UploadTask? task = await uploadFile(file);
-      if (task != null) {
-        uploadTaskCubit.add(task);
+
+    // Store selected images and set flag to show that images have been selected
+    setState(() {
+      _selectedImages = images;
+      _hasSelectedImages = true;
+    });
+  }
+
+  Future<void> _processSelectedImages(BuildContext context) async {
+    if (_selectedImages.isEmpty || !mounted) return;
+
+    try {
+      final uploadTaskCubit = BlocProvider.of<UploadTaskCubit>(
+        context,
+        listen: false,
+      );
+
+      for (var file in _selectedImages) {
+        if (!mounted) break; // Check mounted state during processing
+        UploadTask? task = await uploadFile(file);
+        if (task != null && mounted) {
+          uploadTaskCubit.add(task);
+        }
+      }
+
+      // Clear the selected images after processing
+      if (mounted) {
+        _selectedImages.clear();
+      }
+    } catch (e) {
+      print('Error processing selected images: $e');
+      if (mounted) {
+        _selectedImages.clear();
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider<UploadTaskCubit>(create: (context) => UploadTaskCubit()),
-        BlocProvider<PublishCubit>(create: (context) => PublishCubit()),
-      ],
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Add'),
-          actions: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Row(
-                children: [
-                  FilledButton(
-                    onPressed: () {
-                      handleUploads();
-                    },
-                    child: Text('Upload local files'),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Add'),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Row(
+              children: [
+                FilledButton(
+                  onPressed: () {
+                    handleUploads();
+                  },
+                  child: Text('Upload local files'),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+      body:
+          _hasSelectedImages
+              ? MultiBlocProvider(
+                providers: [
+                  BlocProvider<UploadTaskCubit>(
+                    create: (context) => UploadTaskCubit(),
+                  ),
+                  BlocProvider<PublishCubit>(
+                    create: (context) => PublishCubit(),
                   ),
                 ],
-              ),
-            ),
-          ],
-        ),
-        body: Column(
-          children: [
-            BlocBuilder<UploadTaskCubit, UploadTaskState>(
-              builder: (context, state) {
-                if (state is UploadTaskLoaded && state.isNotEmpty) {
-                  return Expanded(
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: state.length,
-                      itemBuilder:
-                          (context, index) => UploadTaskListTile(
-                            task: state[index],
-                            onDelete: () {
-                              context.read<UploadTaskCubit>().remove(
-                                state[index],
+                child: Builder(
+                  builder: (context) {
+                    // Process images after cubits are available
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted) {
+                        _processSelectedImages(context);
+                      }
+                    });
+
+                    return Column(
+                      children: [
+                        BlocBuilder<UploadTaskCubit, UploadTaskState>(
+                          builder: (context, state) {
+                            if (state is UploadTaskLoaded && state.isNotEmpty) {
+                              return Expanded(
+                                child: ListView.builder(
+                                  shrinkWrap: true,
+                                  itemCount: state.length,
+                                  itemBuilder:
+                                      (context, index) => UploadTaskListTile(
+                                        task: state[index],
+                                        onDelete: () {
+                                          context
+                                              .read<UploadTaskCubit>()
+                                              .remove(state[index]);
+                                        },
+                                      ),
+                                ),
                               );
-                            },
-                          ),
-                    ),
-                  );
-                }
-                return const SizedBox.shrink();
-              },
-            ),
-            BlocBuilder<PublishCubit, PublishState>(
-              builder: (context, state) {
-                if (state is PublishLoaded && state.isNotEmpty) {
-                  return Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: GridView.builder(
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount:
-                              MediaQuery.of(context).size.width ~/ 200,
-                          mainAxisSpacing: 8.0,
-                          crossAxisSpacing: 8.0,
-                          childAspectRatio: 1,
+                            }
+                            return const SizedBox.shrink();
+                          },
                         ),
-                        shrinkWrap: true,
-                        itemCount: state.length,
-                        itemBuilder:
-                            (context, index) => ItemThumbnail(
-                              uploadedRecord: state[index].toMap(),
-                              onDelete: () async {
-                                context.read<PublishCubit>().removeUploaded(
-                                  state[index],
-                                );
-                              },
-                              onPublish: () async {
-                                var editRecord = await _recordPublish(
-                                  context,
-                                  state[index].toMap(),
-                                );
-                                await showDialog(
-                                  context: context,
-                                  builder:
-                                      (context) =>
-                                          EditDialog(editRecord: editRecord),
-                                  barrierDismissible: false,
-                                );
-                              },
-                            ),
-                      ),
-                    ),
-                  );
-                }
-                return const SizedBox(height: 16.0);
-              },
-            ),
-          ],
-        ),
-      ),
+                        BlocBuilder<PublishCubit, PublishState>(
+                          builder: (context, state) {
+                            if (state is PublishLoaded && state.isNotEmpty) {
+                              return Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16.0),
+                                  child: GridView.builder(
+                                    gridDelegate:
+                                        SliverGridDelegateWithFixedCrossAxisCount(
+                                          crossAxisCount:
+                                              MediaQuery.of(
+                                                context,
+                                              ).size.width ~/
+                                              200,
+                                          mainAxisSpacing: 8.0,
+                                          crossAxisSpacing: 8.0,
+                                          childAspectRatio: 1,
+                                        ),
+                                    shrinkWrap: true,
+                                    itemCount: state.length,
+                                    itemBuilder:
+                                        (context, index) => ItemThumbnail(
+                                          uploadedRecord: state[index].toMap(),
+                                          onDelete: () async {
+                                            context
+                                                .read<PublishCubit>()
+                                                .removeUploaded(state[index]);
+                                          },
+                                          onPublish: () async {
+                                            var editRecord =
+                                                await _recordPublish(
+                                                  context,
+                                                  state[index].toMap(),
+                                                );
+                                            await showDialog(
+                                              context: context,
+                                              builder:
+                                                  (context) => EditDialog(
+                                                    editRecord: editRecord,
+                                                  ),
+                                              barrierDismissible: false,
+                                            );
+                                          },
+                                        ),
+                                  ),
+                                ),
+                              );
+                            }
+                            return const SizedBox(height: 16.0);
+                          },
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              )
+              : const Center(
+                child: Text(
+                  'Select images to start uploading',
+                  style: TextStyle(fontSize: 16, color: Colors.grey),
+                ),
+              ),
     );
   }
 }
@@ -277,58 +334,60 @@ class _UploadTaskListTileState extends State<UploadTaskListTile>
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider<UploadTaskCubit>(create: (context) => UploadTaskCubit()),
-        BlocProvider<PublishCubit>(create: (context) => PublishCubit()),
-      ],
-      child: StreamBuilder<TaskSnapshot>(
-        stream: widget.task.snapshotEvents,
-        builder: (
-          BuildContext context,
-          AsyncSnapshot<TaskSnapshot> asyncSnapshot,
-        ) {
-          var info = '';
-          TaskSnapshot? snapshot = asyncSnapshot.data;
-          TaskState? state = snapshot?.state;
+    return StreamBuilder<TaskSnapshot>(
+      stream: widget.task.snapshotEvents,
+      builder: (
+        BuildContext context,
+        AsyncSnapshot<TaskSnapshot> asyncSnapshot,
+      ) {
+        var info = '';
+        TaskSnapshot? snapshot = asyncSnapshot.data;
+        TaskState? state = snapshot?.state;
 
-          if (asyncSnapshot.hasError) {
-            if (asyncSnapshot.error is FirebaseException &&
-                // ignore: cast_nullable_to_non_nullable
-                (asyncSnapshot.error as FirebaseException).code == 'canceled') {
-              info = 'Upload canceled.';
-            } else {
-              // ignore: avoid_print
-              info = 'Something went wrong.';
-            }
-          } else if (snapshot != null) {
-            if (state == TaskState.success) {
-              // controller.stop();
-              UploadTaskCubit().remove(widget.task);
-              _recordUploaded(snapshot.ref).then((record) {
-                PublishCubit().add(record as Photo);
+        if (asyncSnapshot.hasError) {
+          if (asyncSnapshot.error is FirebaseException &&
+              // ignore: cast_nullable_to_non_nullable
+              (asyncSnapshot.error as FirebaseException).code == 'canceled') {
+            info = 'Upload canceled.';
+          } else {
+            // ignore: avoid_print
+            info = 'Something went wrong.';
+          }
+        } else if (snapshot != null) {
+          if (state == TaskState.success) {
+            // Use the cubits from the parent context instead of creating new ones
+            if (mounted) {
+              context.read<UploadTaskCubit>().remove(widget.task);
+              _recordUploaded(snapshot.ref).then((record) async {
+                if (mounted) {
+                  // Convert the uploaded record to a proper Photo object
+                  final photo = await _recordPublish(context, record);
+                  if (mounted) {
+                    context.read<PublishCubit>().add(photo);
+                  }
+                }
               });
             }
           }
-          return ListTile(
-            title: Text('${widget.task.snapshot.ref.name} $info'),
-            subtitle: LinearProgressIndicator(
-              value:
-                  widget.task.snapshot.bytesTransferred /
-                  widget.task.snapshot.totalBytes,
-            ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                IconButton(
-                  icon: const Icon(Icons.delete),
-                  onPressed: widget.onDelete,
-                ),
-              ],
-            ),
-          );
-        },
-      ),
+        }
+        return ListTile(
+          title: Text('${widget.task.snapshot.ref.name} $info'),
+          subtitle: LinearProgressIndicator(
+            value:
+                widget.task.snapshot.bytesTransferred /
+                widget.task.snapshot.totalBytes,
+          ),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              IconButton(
+                icon: const Icon(Icons.delete),
+                onPressed: widget.onDelete,
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
