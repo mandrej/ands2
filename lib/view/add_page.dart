@@ -11,11 +11,11 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_infinite_list/photo/bloc/photo_bloc.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:uuid/uuid.dart';
 import 'package:intl/intl.dart';
+import 'package:uuid/uuid.dart';
 import '../task/cubit/upload_task_cubit.dart';
+import '../photo/cubit/publish_cubit.dart';
 import '../auth/bloc/user_bloc.dart';
 import '../photo/models/photo.dart';
 import '../helpers/read_exif.dart';
@@ -76,9 +76,9 @@ class _TaskManagerState extends State<TaskManager> {
       context,
       listen: false,
     );
-    final ImagePicker _picker = ImagePicker();
-    final List<XFile> images = await _picker.pickMultiImage();
-    if (!mounted) return;
+    final ImagePicker picker = ImagePicker();
+    final List<XFile> images = await picker.pickMultiImage();
+    // if (!mounted) return;
     if (images.isEmpty) {
       ScaffoldMessenger.of(
         context,
@@ -98,7 +98,7 @@ class _TaskManagerState extends State<TaskManager> {
     return MultiBlocProvider(
       providers: [
         BlocProvider<UploadTaskCubit>(create: (context) => UploadTaskCubit()),
-        BlocProvider<PhotoBloc>(create: (context) => PhotoBloc()),
+        BlocProvider<PublishCubit>(create: (context) => PublishCubit()),
       ],
       child: Scaffold(
         appBar: AppBar(
@@ -143,47 +143,51 @@ class _TaskManagerState extends State<TaskManager> {
                 return const SizedBox.shrink();
               },
             ),
-            if (PublishCubit().state.isNotEmpty)
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: GridView.builder(
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: MediaQuery.of(context).size.width ~/ 200,
-                      mainAxisSpacing: 8.0,
-                      crossAxisSpacing: 8.0,
-                      childAspectRatio: 1,
-                    ),
-                    shrinkWrap: true,
-                    itemCount: PublishCubit().state.length,
-                    itemBuilder:
-                        (context, index) => ItemThumbnail(
-                          uploadedRecord: PublishCubit().state[index].toMap(),
-                          onDelete: () async {
-                            PublishCubit().removeUploaded(
-                              PublishCubit().state[index],
-                            );
-                          },
-                          onPublish: () async {
-                            var editRecord = await _recordPublish(
-                              context,
-                              PublishCubit().state[index]
-                                  as Map<String, dynamic>,
-                            );
-                            await showDialog(
-                              context: context,
-                              builder:
-                                  (context) =>
-                                      EditDialog(editRecord: editRecord),
-                              barrierDismissible: false,
-                            );
-                          },
+            BlocBuilder<PublishCubit, PublishState>(
+              builder: (context, state) {
+                if (state is PublishLoaded && state.isNotEmpty) {
+                  return Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: GridView.builder(
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount:
+                              MediaQuery.of(context).size.width ~/ 200,
+                          mainAxisSpacing: 8.0,
+                          crossAxisSpacing: 8.0,
+                          childAspectRatio: 1,
                         ),
-                  ),
-                ),
-              )
-            else
-              SizedBox(height: 16.0),
+                        shrinkWrap: true,
+                        itemCount: state.length,
+                        itemBuilder:
+                            (context, index) => ItemThumbnail(
+                              uploadedRecord: state[index].toMap(),
+                              onDelete: () async {
+                                context.read<PublishCubit>().removeUploaded(
+                                  state[index],
+                                );
+                              },
+                              onPublish: () async {
+                                var editRecord = await _recordPublish(
+                                  context,
+                                  state[index].toMap(),
+                                );
+                                await showDialog(
+                                  context: context,
+                                  builder:
+                                      (context) =>
+                                          EditDialog(editRecord: editRecord),
+                                  barrierDismissible: false,
+                                );
+                              },
+                            ),
+                      ),
+                    ),
+                  );
+                }
+                return const SizedBox(height: 16.0);
+              },
+            ),
           ],
         ),
       ),
@@ -204,13 +208,13 @@ Future<Map<String, dynamic>> _recordUploaded(Reference photoRef) async {
   return record;
 }
 
-Future<Record> _recordPublish(
+Future<Photo> _recordPublish(
   BuildContext context,
   Map<String, dynamic> defaultRecord,
 ) async {
   final auth = BlocProvider.of<UserBloc>(context, listen: false);
   Map<String, dynamic> record;
-  final email = auth.state.user!.email;
+  final email = (auth.state as UserAuthenticated).user.email;
 
   var exif = await readExif(defaultRecord['filename']);
   if (exif.isEmpty) {
@@ -231,7 +235,7 @@ Future<Record> _recordPublish(
     'tags': [],
   };
 
-  return record as Record;
+  return record as Photo;
 }
 
 class UploadTaskListTile extends StatefulWidget {
@@ -300,10 +304,9 @@ class _UploadTaskListTileState extends State<UploadTaskListTile>
           } else if (snapshot != null) {
             if (state == TaskState.success) {
               // controller.stop();
-              context.read<UploadTaskCubit>().remove(widget.task);
+              UploadTaskCubit().remove(widget.task);
               _recordUploaded(snapshot.ref).then((record) {
-                // TODO: Add to publish cubit when it's properly implemented
-                // context.read<PublishCubit>().add(record);
+                PublishCubit().add(record as Photo);
               });
             }
           }

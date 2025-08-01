@@ -30,7 +30,6 @@ Future readExif(filename) async {
     final Uint8List? data = await ref.getData(maxSize);
 
     if (data == null) {
-      print('Failed to retrieve data from Firebase Storage');
       return result;
     }
     final exif = await readExifFromBytes(data);

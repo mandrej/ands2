@@ -4,6 +4,7 @@ import 'package:flutter_infinite_list/find/cubit/find_cubit.dart';
 import 'package:flutter_infinite_list/photo/bloc/photo_bloc.dart';
 import 'view/home_page.dart';
 import 'view/list_page.dart';
+import 'view/add_page.dart';
 import 'theme.dart';
 // import 'examples/auto_suggest_multi_field_example.dart';
 
@@ -33,12 +34,9 @@ class App extends StatelessWidget {
                 child: ListPage(title: 'Andrejeвићи'),
               ),
             ),
-        // '/add': (context) => TaskManager(),
+        '/add': (context) => TaskManager(),
         // '/examples/auto_suggest_multi_field':
-        //     (context) => AutoSuggestMultiFieldExample(),
-        // '/list': (context) => ListPage(title: 'Andrejeвићи'),
       },
-      // home: PostsPage()
     );
   }
 }
