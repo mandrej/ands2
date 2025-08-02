@@ -1,21 +1,21 @@
-part of 'publish_cubit.dart';
+part of 'uploaded_cubit.dart';
 
-sealed class PublishState extends Equatable {
-  const PublishState();
-
-  @override
-  List<Object> get props => [];
-}
-
-final class PublishInitial extends PublishState {
-  const PublishInitial();
+sealed class UploadedState extends Equatable {
+  const UploadedState();
 
   @override
   List<Object> get props => [];
 }
 
-final class PublishLoaded extends PublishState {
-  const PublishLoaded(this.photos);
+final class UploadedInitial extends UploadedState {
+  const UploadedInitial();
+
+  @override
+  List<Object> get props => [];
+}
+
+final class UploadedLoaded extends UploadedState {
+  const UploadedLoaded(this.photos);
 
   final List<Photo> photos;
 

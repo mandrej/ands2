@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_infinite_list/find/cubit/find_cubit.dart';
-import 'package:flutter_infinite_list/photo/bloc/photo_bloc.dart';
+import 'auth/bloc/user_bloc.dart';
+import 'find/cubit/find_cubit.dart';
+import 'photo/bloc/photo_bloc.dart';
+import 'task/cubit/upload_task_cubit.dart';
+import 'photo/cubit/uploaded_cubit.dart';
 import 'view/home_page.dart';
 import 'view/list_page.dart';
 import 'view/add_page.dart';
@@ -34,7 +37,19 @@ class App extends StatelessWidget {
                 child: ListPage(title: 'Andrejeвићи'),
               ),
             ),
-        '/add': (context) => TaskManager(),
+        '/add':
+            (context) => MultiBlocProvider(
+              providers: [
+                BlocProvider(create: (context) => UserBloc()),
+                BlocProvider<UploadTaskCubit>(
+                  create: (context) => UploadTaskCubit(),
+                ),
+                BlocProvider<UploadedCubit>(
+                  create: (context) => UploadedCubit(),
+                ),
+              ],
+              child: const AddPage(),
+            ),
         // '/examples/auto_suggest_multi_field':
       },
     );

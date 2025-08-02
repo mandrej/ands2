@@ -15,284 +15,295 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import '../task/cubit/upload_task_cubit.dart';
-import '../photo/cubit/publish_cubit.dart';
+import '../photo/cubit/uploaded_cubit.dart';
 import '../auth/bloc/user_bloc.dart';
 import '../photo/models/photo.dart';
-import '../helpers/read_exif.dart';
+// import '../helpers/read_exif.dart';
 import '../helpers/common.dart';
 import '../widgets/edit_dialog.dart';
 
-class TaskManager extends StatefulWidget {
-  const TaskManager({super.key});
+class AddPage extends StatefulWidget {
+  const AddPage({super.key});
 
   @override
-  State<TaskManager> createState() => _TaskManagerState();
+  State<AddPage> createState() => _AddPageState();
 }
 
-class _TaskManagerState extends State<TaskManager> {
-  bool _hasSelectedImages = false;
-  List<XFile> _selectedImages = [];
+class _AddPageState extends State<AddPage> {
+  final ImagePicker _picker = ImagePicker();
 
-  Future<UploadTask?> uploadFile(XFile? file) async {
-    if (file == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('No file was selected')));
-      return null;
-    }
-    String fileName = file.name;
-    var uuid = Uuid();
-
-    UploadTask uploadTask;
-    Reference photoRef = FirebaseStorage.instance.ref().child(fileName);
-
-    bool exists = false;
+  Future<void> _pickImages() async {
     try {
-      await photoRef.getDownloadURL();
-      exists = true;
-    } catch (e) {
-      exists = false;
-    }
-
-    if (exists) {
-      var [name, ext] = splitFileName(fileName);
-      String gen = uuid.v4().split('-').last;
-      fileName = '$name-$gen.$ext';
-      photoRef = FirebaseStorage.instance.ref().child(fileName);
-    }
-
-    final metadata = SettableMetadata(
-      contentType: file.mimeType, //'image/jpeg',
-      // customMetadata: {'picked-file-path': file.path},
-    );
-
-    if (kIsWeb) {
-      uploadTask = photoRef.putData(await file.readAsBytes(), metadata);
-    } else {
-      uploadTask = photoRef.putFile(io.File(file.path), metadata);
-    }
-    return Future.value(uploadTask);
-  }
-
-  Future<void> handleUploads() async {
-    final ImagePicker picker = ImagePicker();
-    final List<XFile> images = await picker.pickMultiImage();
-    // if (!mounted) return;
-    if (images.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('No file was selected')));
-      return;
-    }
-
-    // Store selected images and set flag to show that images have been selected
-    setState(() {
-      _selectedImages = images;
-      _hasSelectedImages = true;
-    });
-  }
-
-  Future<void> _processSelectedImages(BuildContext context) async {
-    if (_selectedImages.isEmpty || !mounted) return;
-
-    try {
-      final uploadTaskCubit = BlocProvider.of<UploadTaskCubit>(
-        context,
-        listen: false,
-      );
-
-      for (var file in _selectedImages) {
-        if (!mounted) break; // Check mounted state during processing
-        UploadTask? task = await uploadFile(file);
-        if (task != null && mounted) {
-          uploadTaskCubit.add(task);
+      final List<XFile> images = await _picker.pickMultiImage();
+      if (images.isNotEmpty && mounted) {
+        for (final image in images) {
+          final uploadTask = await uploadFile(image);
+          if (uploadTask != null && mounted) {
+            context.read<UploadTaskCubit>().add(uploadTask);
+          }
         }
       }
-
-      // Clear the selected images after processing
-      if (mounted) {
-        _selectedImages.clear();
-      }
     } catch (e) {
-      print('Error processing selected images: $e');
+      print('Error picking images: $e');
       if (mounted) {
-        _selectedImages.clear();
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error picking images: $e')));
       }
     }
+  }
+
+  Future<void> _pickImageFromCamera() async {
+    try {
+      final XFile? image = await _picker.pickImage(source: ImageSource.camera);
+      if (image != null && mounted) {
+        final uploadTask = await uploadFile(image);
+        if (uploadTask != null && mounted) {
+          context.read<UploadTaskCubit>().add(uploadTask);
+        }
+      }
+    } catch (e) {
+      print('Error taking photo: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error taking photo: $e')));
+      }
+    }
+  }
+
+  void _editPhoto(Photo photo) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => EditDialog(editRecord: photo)),
+    );
+  }
+
+  void _deleteUploadedPhoto(Photo photo) {
+    context.read<UploadedCubit>().removeUploaded(photo);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Photo "${photo.headline}" deleted')),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Add'),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        title: const Text('Add Photos'),
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+      ),
+      body: Column(
+        children: [
+          // Upload buttons section
+          Container(
+            padding: const EdgeInsets.all(16.0),
             child: Row(
               children: [
-                FilledButton(
-                  onPressed: () {
-                    handleUploads();
-                  },
-                  child: Text('Upload local files'),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _pickImages,
+                    icon: const Icon(Icons.photo_library),
+                    label: const Text('Pick Images'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12.0),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _pickImageFromCamera,
+                    icon: const Icon(Icons.camera_alt),
+                    label: const Text('Take Photo'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12.0),
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
-        ],
-      ),
-      body:
-          _hasSelectedImages
-              ? MultiBlocProvider(
-                providers: [
-                  BlocProvider<UploadTaskCubit>(
-                    create: (context) => UploadTaskCubit(),
-                  ),
-                  BlocProvider<PublishCubit>(
-                    create: (context) => PublishCubit(),
-                  ),
-                ],
-                child: Builder(
-                  builder: (context) {
-                    // Process images after cubits are available
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (mounted) {
-                        _processSelectedImages(context);
-                      }
-                    });
 
-                    return Column(
-                      children: [
-                        BlocBuilder<UploadTaskCubit, UploadTaskState>(
-                          builder: (context, state) {
-                            if (state is UploadTaskLoaded && state.isNotEmpty) {
-                              return Expanded(
-                                child: ListView.builder(
-                                  shrinkWrap: true,
-                                  itemCount: state.length,
-                                  itemBuilder:
-                                      (context, index) => UploadTaskListTile(
-                                        task: state[index],
-                                        onDelete: () {
-                                          context
-                                              .read<UploadTaskCubit>()
-                                              .remove(state[index]);
-                                        },
-                                      ),
-                                ),
-                              );
-                            }
-                            return const SizedBox.shrink();
+          // Upload tasks section
+          BlocBuilder<UploadTaskCubit, UploadTaskState>(
+            builder: (context, uploadState) {
+              if (uploadState is UploadTaskLoaded && uploadState.isNotEmpty) {
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Uploading (${uploadState.length})',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 8),
+                      ...uploadState.tasks.map(
+                        (task) => UploadTaskListTile(
+                          task: task,
+                          onDelete: () {
+                            task.cancel();
+                            context.read<UploadTaskCubit>().remove(task);
                           },
                         ),
-                        BlocBuilder<PublishCubit, PublishState>(
-                          builder: (context, state) {
-                            if (state is PublishLoaded && state.isNotEmpty) {
-                              return Expanded(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16.0),
-                                  child: GridView.builder(
-                                    gridDelegate:
-                                        SliverGridDelegateWithFixedCrossAxisCount(
-                                          crossAxisCount:
-                                              MediaQuery.of(
-                                                context,
-                                              ).size.width ~/
-                                              200,
-                                          mainAxisSpacing: 8.0,
-                                          crossAxisSpacing: 8.0,
-                                          childAspectRatio: 1,
-                                        ),
-                                    shrinkWrap: true,
-                                    itemCount: state.length,
-                                    itemBuilder:
-                                        (context, index) => ItemThumbnail(
-                                          uploadedRecord: state[index].toMap(),
-                                          onDelete: () async {
-                                            context
-                                                .read<PublishCubit>()
-                                                .removeUploaded(state[index]);
-                                          },
-                                          onPublish: () async {
-                                            var editRecord =
-                                                await _recordPublish(
-                                                  context,
-                                                  state[index].toMap(),
-                                                );
-                                            await showDialog(
-                                              context: context,
-                                              builder:
-                                                  (context) => EditDialog(
-                                                    editRecord: editRecord,
-                                                  ),
-                                              barrierDismissible: false,
-                                            );
-                                          },
-                                        ),
-                                  ),
-                                ),
-                              );
-                            }
-                            return const SizedBox(height: 16.0);
+                      ),
+                      const Divider(),
+                    ],
+                  ),
+                );
+              }
+              return const SizedBox.shrink();
+            },
+          ),
+
+          // Uploaded images grid section
+          Expanded(
+            child: BlocBuilder<UploadedCubit, UploadedState>(
+              builder: (context, uploadedState) {
+                if (uploadedState is UploadedLoaded &&
+                    uploadedState.isNotEmpty) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: Text(
+                          'Uploaded Images (${uploadedState.length})',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Expanded(
+                        child: GridView.builder(
+                          padding: const EdgeInsets.all(16.0),
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                crossAxisSpacing: 8.0,
+                                mainAxisSpacing: 8.0,
+                                childAspectRatio: 1.0,
+                              ),
+                          itemCount: uploadedState.length,
+                          itemBuilder: (context, index) {
+                            final photo = uploadedState[index];
+                            return ItemThumbnail(
+                              uploadedRecord: photo.toMap(),
+                              onDelete: () => _deleteUploadedPhoto(photo),
+                              onEdit: () => _editPhoto(photo),
+                            );
                           },
+                        ),
+                      ),
+                    ],
+                  );
+                } else {
+                  return const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.photo_library_outlined,
+                          size: 64,
+                          color: Colors.grey,
+                        ),
+                        SizedBox(height: 16),
+                        Text(
+                          'No images uploaded yet',
+                          style: TextStyle(fontSize: 18, color: Colors.grey),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          'Tap the buttons above to add photos',
+                          style: TextStyle(fontSize: 14, color: Colors.grey),
                         ),
                       ],
-                    );
-                  },
-                ),
-              )
-              : const Center(
-                child: Text(
-                  'Select images to start uploading',
-                  style: TextStyle(fontSize: 16, color: Colors.grey),
-                ),
-              ),
+                    ),
+                  );
+                }
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
-Future<Map<String, dynamic>> _recordUploaded(Reference photoRef) async {
-  final url = await photoRef.getDownloadURL();
-  var metadata = await photoRef.getMetadata();
+Future<UploadTask?> uploadFile(XFile? file) async {
+  if (file == null) {
+    print('No file was selected');
+    return null;
+  }
+  String fileName = file.name;
+  var uuid = Uuid();
 
-  final record = <String, dynamic>{
-    'filename': photoRef.name,
-    'url': url,
-    'size': metadata.size,
-    'headline': 'No name',
-  };
-  return record;
+  UploadTask uploadTask;
+  Reference photoRef = FirebaseStorage.instance.ref().child(fileName);
+
+  bool exists = false;
+  try {
+    await photoRef.getDownloadURL();
+    exists = true;
+  } catch (e) {
+    exists = false;
+  }
+
+  if (exists) {
+    var [name, ext] = splitFileName(fileName);
+    String gen = uuid.v4().split('-').last;
+    fileName = '$name-$gen.$ext';
+    photoRef = FirebaseStorage.instance.ref().child(fileName);
+  }
+
+  final metadata = SettableMetadata(
+    contentType: file.mimeType, //'image/jpeg',
+    // customMetadata: {'picked-file-path': file.path},
+  );
+
+  if (kIsWeb) {
+    uploadTask = photoRef.putData(await file.readAsBytes(), metadata);
+  } else {
+    uploadTask = photoRef.putFile(io.File(file.path), metadata);
+  }
+  return Future.value(uploadTask);
 }
 
-Future<Photo> _recordPublish(
-  BuildContext context,
-  Map<String, dynamic> defaultRecord,
-) async {
-  final auth = BlocProvider.of<UserBloc>(context, listen: false);
-  Map<String, dynamic> record;
-  final email = (auth.state as UserAuthenticated).user.email;
+Future<Photo> _uploadedPhotoDefault(Reference photoRef, String email) async {
+  try {
+    final url = await photoRef.getDownloadURL();
+    final metadata = await photoRef.getMetadata();
+    final now = DateTime.now();
 
-  var exif = await readExif(defaultRecord['filename']);
-  if (exif.isEmpty) {
-    var date = DateTime.now();
-    exif = {
+    Map<String, dynamic> record = {
+      'filename': photoRef.name,
+      'url': url,
+      'size': metadata.size ?? 0,
+      'headline': 'No name',
+      'email': email,
+      'nick': nickEmail(email),
+      'tags': <String>[],
+      'thumb': url,
       'model': 'UNKNOWN',
-      'date': DateFormat(formatDate).format(date),
-      'year': date.year,
-      'month': date.month,
-      'day': date.day,
+      'date': DateFormat(formatDate).format(now),
+      'year': now.year,
+      'month': now.month,
+      'day': now.day,
     };
-  }
-  record = <String, dynamic>{
-    ...defaultRecord,
-    ...exif,
-    'email': email,
-    'nick': nickEmail(email),
-    'tags': [],
-  };
 
-  return record as Photo;
+    // TODO: Uncomment when EXIF reading is needed
+    // var exif = await readExif(record['filename']);
+    // if (exif.isNotEmpty) {
+    //   record = <String, dynamic>{
+    //     ...record,
+    //     ...exif,
+    //   };
+    // }
+
+    return Photo.fromMap(record);
+  } catch (e) {
+    print('Error creating photo record: $e');
+    rethrow;
+  }
 }
 
 class UploadTaskListTile extends StatefulWidget {
@@ -306,10 +317,6 @@ class UploadTaskListTile extends StatefulWidget {
   final UploadTask task;
   final VoidCallback onDelete;
 
-  // num _bytesTransferred(TaskSnapshot snapshot) {
-  //   return snapshot.bytesTransferred / snapshot.totalBytes;
-  // }
-
   @override
   State<UploadTaskListTile> createState() => _UploadTaskListTileState();
 }
@@ -317,6 +324,7 @@ class UploadTaskListTile extends StatefulWidget {
 class _UploadTaskListTileState extends State<UploadTaskListTile>
     with TickerProviderStateMixin {
   late AnimationController controller;
+  bool _hasProcessedSuccess = false;
 
   @override
   void initState() {
@@ -354,19 +362,49 @@ class _UploadTaskListTileState extends State<UploadTaskListTile>
             info = 'Something went wrong.';
           }
         } else if (snapshot != null) {
-          if (state == TaskState.success) {
+          if (state == TaskState.success && !_hasProcessedSuccess) {
+            _hasProcessedSuccess = true;
+            print(
+              'Upload task completed successfully for: ${snapshot.ref.name}',
+            );
+            final auth = context.read<UserBloc>().state;
+            if (auth is! UserAuthenticated) {
+              print('User not authenticated, skipping photo processing');
+              return const SizedBox();
+            }
+            final email = auth.user.email;
+
             // Use the cubits from the parent context instead of creating new ones
             if (mounted) {
-              context.read<UploadTaskCubit>().remove(widget.task);
-              _recordUploaded(snapshot.ref).then((record) async {
-                if (mounted) {
-                  // Convert the uploaded record to a proper Photo object
-                  final photo = await _recordPublish(context, record);
-                  if (mounted) {
-                    context.read<PublishCubit>().add(photo);
-                  }
-                }
-              });
+              print('Processing photo first, then removing upload task...');
+              // Process photo first to avoid widget unmounting issues
+              _uploadedPhotoDefault(snapshot.ref, email)
+                  .then((photo) {
+                    print('Photo created successfully: ${photo.filename}');
+                    // Add photo to UploadedCubit
+                    print('Adding photo to UploadedCubit...');
+                    context.read<UploadedCubit>().addUploaded(photo);
+                    print('Photo added to UploadedCubit successfully');
+
+                    // Now remove the upload task (this may unmount the widget)
+                    print('Removing upload task...');
+                    context.read<UploadTaskCubit>().remove(widget.task);
+                    print('Upload task removed successfully');
+                  })
+                  .catchError((error) {
+                    print('Error processing uploaded photo: $error');
+                    // Still remove the task even if photo processing failed
+                    context.read<UploadTaskCubit>().remove(widget.task);
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Error processing photo: $error'),
+                        ),
+                      );
+                    }
+                  });
+            } else {
+              print('Widget not mounted, skipping photo processing');
             }
           }
         }
@@ -397,16 +435,15 @@ class ItemThumbnail extends StatelessWidget {
     super.key,
     required this.uploadedRecord,
     required this.onDelete,
-    required this.onPublish,
+    this.onEdit,
   });
 
   final Map<String, dynamic> uploadedRecord;
   final VoidCallback onDelete;
-  final VoidCallback onPublish;
+  final VoidCallback? onEdit;
 
   @override
   Widget build(BuildContext context) {
-    // final api = ref.read(myApiProvider);
     return Card(
       clipBehavior: Clip.antiAliasWithSaveLayer,
       child: Stack(
@@ -423,19 +460,22 @@ class ItemThumbnail extends StatelessWidget {
             left: 0,
             right: 0,
             child: Container(
-              decoration: BoxDecoration(color: Colors.white70),
+              decoration: const BoxDecoration(color: Colors.black87),
               child: Row(
                 mainAxisSize: MainAxisSize.max,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.delete),
+                    icon: const Icon(Icons.delete, color: Colors.red),
                     onPressed: onDelete,
+                    tooltip: 'Delete',
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.publish),
-                    onPressed: onPublish,
-                  ),
+                  if (onEdit != null)
+                    IconButton(
+                      icon: const Icon(Icons.edit, color: Colors.blue),
+                      onPressed: onEdit,
+                      tooltip: 'Edit',
+                    ),
                 ],
               ),
             ),

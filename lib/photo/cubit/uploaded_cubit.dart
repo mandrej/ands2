@@ -4,7 +4,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import '../../helpers/common.dart';
 import '../models/photo.dart';
 
-part 'publish_state.dart';
+part 'uploaded_state.dart';
 
 void removeFromStorage(String fileName) {
   final photoRef = FirebaseStorage.instance.ref().child(fileName);
@@ -20,39 +20,37 @@ void removeFromStorage(String fileName) {
   });
 }
 
-class PublishCubit extends HydratedCubit<PublishState> {
-  PublishCubit() : super(const PublishInitial()) {
-    print('PublishCubit constructor called');
+class UploadedCubit extends HydratedCubit<UploadedState> {
+  UploadedCubit() : super(const UploadedInitial()) {
+    print('UploadedCubit constructor called');
   }
 
   List<Photo> get photos {
-    if (state is PublishLoaded) {
-      return (state as PublishLoaded).photos;
+    if (state is UploadedLoaded) {
+      return (state as UploadedLoaded).photos;
     }
     return [];
   }
 
-  void add(Photo record) {
-    print('PublishCubit.add called with record: ${record.filename}');
+  void addUploaded(Photo record) {
     final currentPhotos = photos;
-    print('Current photos count: ${currentPhotos.length}');
     if (!currentPhotos.any((item) => item.filename == record.filename)) {
       print('Adding new record: ${record.filename}');
-      emit(PublishLoaded([...currentPhotos, record]));
+      emit(UploadedLoaded([...currentPhotos, record]));
     } else {
       print('Record already exists: ${record.filename}');
     }
   }
 
   void removeUploaded(Photo record) {
-    donePublish(record);
+    doneUploaded(record);
     removeFromStorage(record.filename);
   }
 
-  void donePublish(Photo record) {
+  void doneUploaded(Photo record) {
     final currentPhotos = photos;
     emit(
-      PublishLoaded(
+      UploadedLoaded(
         currentPhotos
             .where((item) => item.filename != record.filename)
             .toList(),
@@ -61,21 +59,21 @@ class PublishCubit extends HydratedCubit<PublishState> {
   }
 
   @override
-  PublishState? fromJson(Map<String, dynamic> json) {
+  UploadedState? fromJson(Map<String, dynamic> json) {
     final files = json['uploaded'];
     if (files is List) {
       final photos =
           files
               .map((item) => Photo.fromMap(item as Map<String, dynamic>))
               .toList();
-      return PublishLoaded(photos);
+      return UploadedLoaded(photos);
     }
-    return const PublishInitial();
+    return const UploadedInitial();
   }
 
   @override
-  Map<String, dynamic>? toJson(PublishState state) {
-    if (state is PublishLoaded) {
+  Map<String, dynamic>? toJson(UploadedState state) {
+    if (state is UploadedLoaded) {
       return {
         'uploaded': state.photos.map((record) => record.toMap()).toList(),
       };
