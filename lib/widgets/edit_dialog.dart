@@ -21,16 +21,24 @@ class _EditDialogState extends State<EditDialog> {
   Map<String, dynamic> _record = {};
 
   @override
-  void initState() async {
+  void initState() {
     super.initState();
     _record = {...widget.editRecord.toMap()};
-    // if (!_record.containsKey('thumb') {
-    //    Map<String, dynamic> exif = await readExif(
-    //       _record['filename'],
-    //     );
-    //     _record = {..._record, ...exif};
-    //     print(_record);
-    // }
+    _loadExifIfNeeded();
+  }
+
+  void _loadExifIfNeeded() async {
+    if (!_record.containsKey('thumb')) {
+      try {
+        Map<String, dynamic> exif = await readExif(_record['filename']);
+        setState(() {
+          _record = {..._record, ...exif};
+        });
+        print(_record);
+      } catch (e) {
+        print('Error reading EXIF data: $e');
+      }
+    }
   }
 
   @override
@@ -162,12 +170,11 @@ class _EditDialogState extends State<EditDialog> {
                                     },
                                   ),
                         ),
-                        onSaved:
-                            (value) => {
-                              setState(() {
-                                _record['headline'] = value!;
-                              }),
-                            },
+                        onSaved: (value) {
+                          setState(() {
+                            _record['headline'] = value!;
+                          });
+                        },
                       ),
                       DatetimeWidget(
                         dateAndTime: _record['date'],
