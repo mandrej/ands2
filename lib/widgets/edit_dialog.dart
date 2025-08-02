@@ -21,17 +21,22 @@ class _EditDialogState extends State<EditDialog> {
   Map<String, dynamic> _record = {};
 
   @override
-  void initState() {
+  void initState() async {
     super.initState();
     _record = {...widget.editRecord.toMap()};
+    if (!_record.containsKey('thumb') {
+       Map<String, dynamic> exif = await readExif(
+          _record['filename'],
+        );
+        _record = {..._record, ...exif};
+        print(_record);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
-    final _controllerHeadline = TextEditingController(
-      text: _record['headline'],
-    );
+    final controllerHeadline = TextEditingController(text: _record['headline']);
 
     return MultiBlocProvider(
       providers: [
@@ -55,8 +60,11 @@ class _EditDialogState extends State<EditDialog> {
                 children: [
                   ElevatedButton(
                     child: const Text('Read Exif'),
-                    onPressed: () {
-                      readExif(_record['filename']);
+                    onPressed: () async {
+                      Map<String, dynamic> exif = await readExif(
+                        _record['filename'],
+                      );
+                      _record = {..._record, ...exif};
                     },
                   ),
                   SizedBox(width: 16),
@@ -133,7 +141,7 @@ class _EditDialogState extends State<EditDialog> {
                   child: Column(
                     children: [
                       TextFormField(
-                        controller: _controllerHeadline,
+                        controller: controllerHeadline,
                         validator: (value) {
                           if (value!.isEmpty) {
                             return 'Please enter Headline.';
@@ -143,7 +151,7 @@ class _EditDialogState extends State<EditDialog> {
                         decoration: InputDecoration(
                           labelText: 'Headline',
                           suffixIcon:
-                              _controllerHeadline.text.isEmpty
+                              controllerHeadline.text.isEmpty
                                   ? null
                                   : IconButton(
                                     icon: const Icon(Icons.clear),

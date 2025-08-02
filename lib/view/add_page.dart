@@ -1,9 +1,3 @@
-// Copyright 2022, the Chromium project authors.  Please see the AUTHORS file
-// for details. All rights reserved. Use of this source code is governed by a
-// BSD-style license that can be found in the LICENSE file.
-
-// https://pub.dev/packages/firebase_storage/example
-
 import 'dart:async';
 import 'dart:io' as io;
 
@@ -18,7 +12,6 @@ import '../task/cubit/upload_task_cubit.dart';
 import '../photo/cubit/uploaded_cubit.dart';
 import '../auth/bloc/user_bloc.dart';
 import '../photo/models/photo.dart';
-// import '../helpers/read_exif.dart';
 import '../helpers/common.dart';
 import '../widgets/edit_dialog.dart';
 
@@ -177,11 +170,12 @@ class _AddPageState extends State<AddPage> {
                         child: GridView.builder(
                           padding: const EdgeInsets.all(16.0),
                           gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                crossAxisSpacing: 8.0,
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount:
+                                    MediaQuery.of(context).size.width ~/ 320,
                                 mainAxisSpacing: 8.0,
-                                childAspectRatio: 1.0,
+                                crossAxisSpacing: 8.0,
+                                childAspectRatio: 1,
                               ),
                           itemCount: uploadedState.length,
                           itemBuilder: (context, index) {
@@ -289,15 +283,6 @@ Future<Photo> _uploadedPhotoDefault(Reference photoRef, String email) async {
       'month': now.month,
       'day': now.day,
     };
-
-    // TODO: Uncomment when EXIF reading is needed
-    // var exif = await readExif(record['filename']);
-    // if (exif.isNotEmpty) {
-    //   record = <String, dynamic>{
-    //     ...record,
-    //     ...exif,
-    //   };
-    // }
 
     return Photo.fromMap(record);
   } catch (e) {
