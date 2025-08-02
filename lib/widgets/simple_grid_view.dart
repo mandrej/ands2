@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_infinite_list/auth/bloc/user_bloc.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 import 'confirm_delete.dart';
 import 'edit_dialog.dart';
+import '../auth/bloc/user_bloc.dart';
 import '../photo/models/photo.dart';
 
 class SimpleGridView extends StatelessWidget {

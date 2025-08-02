@@ -24,13 +24,13 @@ class _EditDialogState extends State<EditDialog> {
   void initState() async {
     super.initState();
     _record = {...widget.editRecord.toMap()};
-    if (!_record.containsKey('thumb') {
-       Map<String, dynamic> exif = await readExif(
-          _record['filename'],
-        );
-        _record = {..._record, ...exif};
-        print(_record);
-    }
+    // if (!_record.containsKey('thumb') {
+    //    Map<String, dynamic> exif = await readExif(
+    //       _record['filename'],
+    //     );
+    //     _record = {..._record, ...exif};
+    //     print(_record);
+    // }
   }
 
   @override
