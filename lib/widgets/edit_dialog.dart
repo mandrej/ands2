@@ -24,22 +24,22 @@ class _EditDialogState extends State<EditDialog> {
   void initState() {
     super.initState();
     _record = {...widget.editRecord.toMap()};
-    _loadExifIfNeeded();
+    // _loadExifIfNeeded();
   }
 
-  void _loadExifIfNeeded() async {
-    if (!_record.containsKey('thumb')) {
-      try {
-        Map<String, dynamic> exif = await readExif(_record['filename']);
-        setState(() {
-          _record = {..._record, ...exif};
-        });
-        print(_record);
-      } catch (e) {
-        print('Error reading EXIF data: $e');
-      }
-    }
-  }
+  // void _loadExifIfNeeded() async {
+  //   if (!_record.containsKey('thumb')) {
+  //     try {
+  //       Map<String, dynamic> exif = await readExif(_record['filename']);
+  //       setState(() {
+  //         _record = {..._record, ...exif};
+  //       });
+  //       print(_record);
+  //     } catch (e) {
+  //       print('Error reading EXIF data: $e');
+  //     }
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -72,7 +72,9 @@ class _EditDialogState extends State<EditDialog> {
                       Map<String, dynamic> exif = await readExif(
                         _record['filename'],
                       );
-                      _record = {..._record, ...exif};
+                      setState(() {
+                        _record = {..._record, ...exif};
+                      });
                     },
                   ),
                   SizedBox(width: 16),
@@ -226,15 +228,18 @@ class _EditDialogState extends State<EditDialog> {
                           ),
                         ],
                         initialValues: {
+                          'date': _record['date'],
                           'email': _record['email'],
                           'tags': _record['tags'],
-                          'model': _record['model'],
                           'lens': _record['lens'],
+                          'model': _record['model'],
                         },
                         onChanged: (values) {
                           setState(() {
+                            _record['date'] = values['date'];
                             _record['email'] = values['email'];
                             _record['tags'] = values['tags'];
+                            _record['model'] = values['model'];
                             _record['lens'] = values['lens'];
                           });
                         },

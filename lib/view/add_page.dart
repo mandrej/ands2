@@ -5,6 +5,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
@@ -24,6 +25,7 @@ class AddPage extends StatefulWidget {
 
 class _AddPageState extends State<AddPage> {
   final ImagePicker _picker = ImagePicker();
+  final Set<String> _processingTasks = <String>{};
 
   Future<void> _pickImages() async {
     try {
@@ -71,11 +73,62 @@ class _AddPageState extends State<AddPage> {
     );
   }
 
+  Future<void> _handleUploadCompletion(UploadTask task, String email) async {
+    final taskId = task.snapshot.ref.name;
+
+    // Prevent duplicate processing
+    if (_processingTasks.contains(taskId)) {
+      print('Task $taskId already being processed, skipping');
+      return;
+    }
+
+    _processingTasks.add(taskId);
+
+    try {
+      print('Processing upload completion for: $taskId');
+
+      // Create photo record
+      final photo = await _uploadedPhotoDefault(task.snapshot.ref, email);
+
+      if (!mounted) return;
+
+      if (!context.read<UploadedCubit>().contains(photo)) {
+        context.read<UploadedCubit>().addUploaded(photo);
+        print('Photo added successfully: ${photo.filename}');
+      } else {
+        print('Photo already exists in UploadedCubit: ${photo.filename}');
+      }
+
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      if (mounted) {
+        context.read<UploadTaskCubit>().remove(task);
+        print('Upload task removed successfully: $taskId');
+      }
+    } catch (error) {
+      print('Error processing upload completion: $error');
+      if (mounted) {
+        context.read<UploadTaskCubit>().remove(task);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error processing photo: $error')),
+        );
+      }
+    } finally {
+      _processingTasks.remove(taskId);
+    }
+  }
+
   void _deleteUploadedPhoto(Photo photo) {
     context.read<UploadedCubit>().removeUploaded(photo);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Photo "${photo.headline}" deleted')),
     );
+  }
+
+  @override
+  void dispose() {
+    _processingTasks.clear();
+    super.dispose();
   }
 
   @override
@@ -134,6 +187,7 @@ class _AddPageState extends State<AddPage> {
                       ...uploadState.tasks.map(
                         (task) => UploadTaskListTile(
                           task: task,
+                          onUploadComplete: _handleUploadCompletion,
                           onDelete: () {
                             task.cancel();
                             context.read<UploadTaskCubit>().remove(task);
@@ -228,38 +282,49 @@ Future<UploadTask?> uploadFile(XFile? file) async {
     print('No file was selected');
     return null;
   }
-  String fileName = file.name;
-  var uuid = Uuid();
 
-  UploadTask uploadTask;
-  Reference photoRef = FirebaseStorage.instance.ref().child(fileName);
-
-  bool exists = false;
   try {
-    await photoRef.getDownloadURL();
-    exists = true;
+    String fileName = file.name;
+    var uuid = Uuid();
+
+    UploadTask uploadTask;
+    Reference photoRef = FirebaseStorage.instance.ref().child(fileName);
+
+    bool exists = false;
+    try {
+      await photoRef.getDownloadURL();
+      exists = true;
+    } catch (e) {
+      exists = false;
+    }
+
+    if (exists) {
+      var [name, ext] = splitFileName(fileName);
+      String gen = uuid.v4().split('-').last;
+      fileName = '$name-$gen.$ext';
+      photoRef = FirebaseStorage.instance.ref().child(fileName);
+    }
+
+    final metadata = SettableMetadata(
+      contentType: file.mimeType,
+      customMetadata: {
+        'originalName': file.name,
+        'uploadTime': DateTime.now().toIso8601String(),
+      },
+    );
+
+    if (kIsWeb) {
+      uploadTask = photoRef.putData(await file.readAsBytes(), metadata);
+    } else {
+      uploadTask = photoRef.putFile(io.File(file.path), metadata);
+    }
+
+    print('Upload task created for: $fileName');
+    return uploadTask;
   } catch (e) {
-    exists = false;
+    print('Error creating upload task: $e');
+    return null;
   }
-
-  if (exists) {
-    var [name, ext] = splitFileName(fileName);
-    String gen = uuid.v4().split('-').last;
-    fileName = '$name-$gen.$ext';
-    photoRef = FirebaseStorage.instance.ref().child(fileName);
-  }
-
-  final metadata = SettableMetadata(
-    contentType: file.mimeType, //'image/jpeg',
-    // customMetadata: {'picked-file-path': file.path},
-  );
-
-  if (kIsWeb) {
-    uploadTask = photoRef.putData(await file.readAsBytes(), metadata);
-  } else {
-    uploadTask = photoRef.putFile(io.File(file.path), metadata);
-  }
-  return Future.value(uploadTask);
 }
 
 Future<Photo> _uploadedPhotoDefault(Reference photoRef, String email) async {
@@ -297,10 +362,12 @@ class UploadTaskListTile extends StatefulWidget {
     super.key,
     required this.task,
     required this.onDelete,
+    required this.onUploadComplete,
   });
 
   final UploadTask task;
   final VoidCallback onDelete;
+  final Future<void> Function(UploadTask task, String email) onUploadComplete;
 
   @override
   State<UploadTaskListTile> createState() => _UploadTaskListTileState();
@@ -339,11 +406,9 @@ class _UploadTaskListTileState extends State<UploadTaskListTile>
 
         if (asyncSnapshot.hasError) {
           if (asyncSnapshot.error is FirebaseException &&
-              // ignore: cast_nullable_to_non_nullable
               (asyncSnapshot.error as FirebaseException).code == 'canceled') {
             info = 'Upload canceled.';
           } else {
-            // ignore: avoid_print
             info = 'Something went wrong.';
           }
         } else if (snapshot != null) {
@@ -359,38 +424,12 @@ class _UploadTaskListTileState extends State<UploadTaskListTile>
             }
             final email = auth.user.email;
 
-            // Use the cubits from the parent context instead of creating new ones
-            if (mounted) {
-              print('Processing photo first, then removing upload task...');
-              // Process photo first to avoid widget unmounting issues
-              _uploadedPhotoDefault(snapshot.ref, email)
-                  .then((photo) {
-                    print('Photo created successfully: ${photo.filename}');
-                    // Add photo to UploadedCubit
-                    print('Adding photo to UploadedCubit...');
-                    context.read<UploadedCubit>().addUploaded(photo);
-                    print('Photo added to UploadedCubit successfully');
-
-                    // Now remove the upload task (this may unmount the widget)
-                    print('Removing upload task...');
-                    context.read<UploadTaskCubit>().remove(widget.task);
-                    print('Upload task removed successfully');
-                  })
-                  .catchError((error) {
-                    print('Error processing uploaded photo: $error');
-                    // Still remove the task even if photo processing failed
-                    context.read<UploadTaskCubit>().remove(widget.task);
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Error processing photo: $error'),
-                        ),
-                      );
-                    }
-                  });
-            } else {
-              print('Widget not mounted, skipping photo processing');
-            }
+            // Use the centralized upload completion handler
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                widget.onUploadComplete(widget.task, email);
+              }
+            });
           }
         }
         return ListTile(

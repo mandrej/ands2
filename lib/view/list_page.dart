@@ -64,6 +64,7 @@ class _ListPageState extends State<ListPage> {
             appBar: AppBar(
               title: Text(widget.title),
               actions: <Widget>[EditView()],
+              backgroundColor: Theme.of(context).colorScheme.inversePrimary,
             ),
             drawer: isLargeScreen ? null : Drawer(child: drawerContent),
             body: Row(

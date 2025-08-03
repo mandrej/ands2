@@ -47,6 +47,15 @@ class UploadedCubit extends HydratedCubit<UploadedState> {
     removeFromStorage(record.filename);
   }
 
+  bool contains(Photo photo) {
+    if (state is UploadedLoaded) {
+      return (state as UploadedLoaded).photos.any(
+        (p) => p.filename == photo.filename,
+      );
+    }
+    return false;
+  }
+
   void doneUploaded(Photo record) {
     final currentPhotos = photos;
     emit(
