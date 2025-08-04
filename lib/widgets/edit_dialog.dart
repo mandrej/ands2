@@ -50,7 +50,7 @@ class _EditDialogState extends State<EditDialog> {
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Row(
                 children: [
-                  ElevatedButton(
+                  FilledButton(
                     child: const Text('Save'),
                     onPressed: () {
                       _formKey.currentState!.save();

@@ -15,7 +15,6 @@ import '../photo/models/photo.dart';
 import '../helpers/read_exif.dart';
 import '../helpers/common.dart';
 import '../widgets/edit_dialog.dart';
-import 'home_page.dart';
 
 class AddPage extends StatefulWidget {
   const AddPage({super.key});
@@ -27,20 +26,6 @@ class AddPage extends StatefulWidget {
 class _AddPageState extends State<AddPage> {
   final ImagePicker _picker = ImagePicker();
   final Set<String> _processingTasks = <String>{};
-
-  // @override
-  // void initState() {
-  //   super.initState();
-  //   // final authState = context.read<UserBloc>().state;
-  //   //  BlocProvider.of<UserBloc>().state;
-
-  //   // if (authState is UserAuthenticated && authState.isAdmin) {
-  //   Navigator.pushReplacement(
-  //     context,
-  //     MaterialPageRoute(builder: (context) => HomePage(title: 'Error')),
-  //   );
-  //   // }
-  // }
 
   Future<void> _pickImages() async {
     try {
@@ -161,7 +146,7 @@ class _AddPageState extends State<AddPage> {
             child: Row(
               children: [
                 Expanded(
-                  child: ElevatedButton.icon(
+                  child: FilledButton.icon(
                     onPressed: _pickImages,
                     icon: const Icon(Icons.photo_library),
                     label: const Text('Pick Images'),
@@ -172,7 +157,7 @@ class _AddPageState extends State<AddPage> {
                 ),
                 const SizedBox(width: 16),
                 Expanded(
-                  child: ElevatedButton.icon(
+                  child: FilledButton.icon(
                     onPressed: _pickImageFromCamera,
                     icon: const Icon(Icons.camera_alt),
                     label: const Text('Take Photo'),
