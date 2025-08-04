@@ -5,7 +5,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
+// import 'package:flutter/scheduler.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
@@ -13,6 +13,7 @@ import '../task/cubit/upload_task_cubit.dart';
 import '../photo/cubit/uploaded_cubit.dart';
 import '../auth/bloc/user_bloc.dart';
 import '../photo/models/photo.dart';
+import '../helpers/read_exif.dart';
 import '../helpers/common.dart';
 import '../widgets/edit_dialog.dart';
 
@@ -332,6 +333,7 @@ Future<Photo> _uploadedPhotoDefault(Reference photoRef, String email) async {
     final url = await photoRef.getDownloadURL();
     final metadata = await photoRef.getMetadata();
     final now = DateTime.now();
+    final exif = await readExif(photoRef.name);
 
     Map<String, dynamic> record = {
       'filename': photoRef.name,
@@ -348,6 +350,7 @@ Future<Photo> _uploadedPhotoDefault(Reference photoRef, String email) async {
       'month': now.month,
       'day': now.day,
     };
+    record = {...record, ...exif};
 
     return Photo.fromMap(record);
   } catch (e) {

@@ -1,3 +1,5 @@
+// ignore_for_file: non_constant_identifier_names
+
 import 'package:equatable/equatable.dart';
 
 final class Photo extends Equatable {
@@ -8,7 +10,7 @@ final class Photo extends Equatable {
     required this.email,
     required this.nick,
     required this.url,
-    required this.thumb,
+    this.thumb,
     required this.date,
     required this.year,
     required this.month,
@@ -16,7 +18,7 @@ final class Photo extends Equatable {
     required this.size,
     this.model = '',
     this.lens = '',
-    this.focalLength = 0,
+    this.focal_length = 0,
     this.aperture = 0,
     this.shutter = '',
     this.iso = 0,
@@ -31,7 +33,7 @@ final class Photo extends Equatable {
   final String email;
   final String nick;
   final String url;
-  final String thumb;
+  final String? thumb;
   final String date;
   final int year;
   final int month;
@@ -39,7 +41,7 @@ final class Photo extends Equatable {
   final int size;
   final String? model;
   final String? lens;
-  final int? focalLength;
+  final int? focal_length;
   final double? aperture;
   final String? shutter;
   final int? iso;
@@ -63,7 +65,7 @@ final class Photo extends Equatable {
     size,
     model,
     lens,
-    focalLength,
+    focal_length,
     aperture,
     shutter,
     iso,
@@ -87,7 +89,7 @@ final class Photo extends Equatable {
     int? size,
     String? model,
     String? lens,
-    int? focalLength,
+    int? focal_length,
     double? aperture,
     String? shutter,
     int? iso,
@@ -110,7 +112,7 @@ final class Photo extends Equatable {
       size: size ?? this.size,
       model: model ?? this.model,
       lens: lens ?? this.lens,
-      focalLength: focalLength ?? this.focalLength,
+      focal_length: focal_length ?? this.focal_length,
       aperture: aperture ?? this.aperture,
       shutter: shutter ?? this.shutter,
       iso: iso ?? this.iso,
@@ -136,7 +138,7 @@ final class Photo extends Equatable {
       'size': size,
       'model': model,
       'lens': lens,
-      'focalLength': focalLength,
+      'focal_length': focal_length,
       'aperture': aperture,
       'shutter': shutter,
       'iso': iso,
@@ -162,7 +164,7 @@ final class Photo extends Equatable {
       size: map['size'] as int,
       model: map['model'] as String?,
       lens: map['lens'] as String?,
-      focalLength: map['focalLength'] as int?,
+      focal_length: map['focal_length'] as int?,
       aperture: map['aperture'] as double?,
       shutter: map['shutter'] as String?,
       iso: map['iso'] as int?,

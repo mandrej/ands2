@@ -11,10 +11,9 @@ void removeFromStorage(String fileName) {
   photoRef.delete().catchError((e) {
     print('Error deleting file: $e');
   });
-  final thumbRef = FirebaseStorage.instance
-      .ref()
-      .child('/thumbnails')
-      .child('/${thumbFileName(photoRef.name)}');
+  final thumbRef = FirebaseStorage.instance.ref().child(
+    '/${thumbFileName(photoRef.name)}',
+  );
   thumbRef.delete().catchError((e) {
     print('Error deleting thumbnail: $e');
   });

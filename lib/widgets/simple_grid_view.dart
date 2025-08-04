@@ -78,7 +78,10 @@ class ItemThumbnail extends StatelessWidget {
                     children: [
                       AspectRatio(
                         aspectRatio: 1,
-                        child: Image.network(record.thumb, fit: BoxFit.cover),
+                        child: Image.network(
+                          record.thumb as String,
+                          fit: BoxFit.cover,
+                        ),
                       ),
                       if (editMode)
                         Positioned(

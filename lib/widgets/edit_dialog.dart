@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../photo/bloc/photo_bloc.dart';
 import '../values/bloc/available_values_bloc.dart';
 import '../widgets/datetime_widget.dart';
-import '../helpers/read_exif.dart';
 import '../photo/models/photo.dart';
 import 'auto_suggest_multi_field.dart';
 
@@ -24,22 +23,7 @@ class _EditDialogState extends State<EditDialog> {
   void initState() {
     super.initState();
     _record = {...widget.editRecord.toMap()};
-    // _loadExifIfNeeded();
   }
-
-  // void _loadExifIfNeeded() async {
-  //   if (!_record.containsKey('thumb')) {
-  //     try {
-  //       Map<String, dynamic> exif = await readExif(_record['filename']);
-  //       setState(() {
-  //         _record = {..._record, ...exif};
-  //       });
-  //       print(_record);
-  //     } catch (e) {
-  //       print('Error reading EXIF data: $e');
-  //     }
-  //   }
-  // }
 
   @override
   Widget build(BuildContext context) {
@@ -67,27 +51,16 @@ class _EditDialogState extends State<EditDialog> {
               child: Row(
                 children: [
                   ElevatedButton(
-                    child: const Text('Read Exif'),
-                    onPressed: () async {
-                      Map<String, dynamic> exif = await readExif(
-                        _record['filename'],
-                      );
-                      setState(() {
-                        _record = {..._record, ...exif};
-                      });
-                    },
-                  ),
-                  SizedBox(width: 16),
-                  ElevatedButton(
                     child: const Text('Save'),
                     onPressed: () {
                       _formKey.currentState!.save();
-                      print('\n\nedited photo $_record');
-                      // if (_record.containsKey('thumb')) {
-                      //   PhotoBloc().add(PhotoUpdate(_record as Photo));
-                      // } else {
-                      //   PhotoBloc().add(PhotoAdd(_record as Photo));
-                      // }
+                      if (_record['thumb'] == _record['url']) {
+                        print('\n\nNew photo $_record');
+                        // PhotoBloc().add(PhotoUpdate(_record as Photo));
+                      } else {
+                        print('\n\nEdited photo $_record');
+                        // PhotoBloc().add(PhotoAdd(_record as Photo));
+                      }
                       Navigator.of(context).pop();
                     },
                   ),
@@ -108,9 +81,7 @@ class _EditDialogState extends State<EditDialog> {
                     child: Column(
                       children: [
                         Image.network(
-                          _record.containsKey('thumb')
-                              ? _record['thumb']
-                              : _record['url'],
+                          _record['thumb'],
                           width: 400,
                           // height: 400,
                           fit: BoxFit.cover,
