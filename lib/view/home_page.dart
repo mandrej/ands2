@@ -200,7 +200,7 @@ class FrontWelcome extends StatelessWidget {
             const SizedBox(height: 16.0),
             BlocBuilder<UserBloc, UserState>(
               builder: (context, state) {
-                if (state is UserAuthenticated) {
+                if (state is UserAuthenticated && state.isFamily) {
                   return Column(
                     children: [
                       IconButton(

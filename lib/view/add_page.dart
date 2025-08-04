@@ -5,7 +5,6 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-// import 'package:flutter/scheduler.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
@@ -16,6 +15,7 @@ import '../photo/models/photo.dart';
 import '../helpers/read_exif.dart';
 import '../helpers/common.dart';
 import '../widgets/edit_dialog.dart';
+import 'home_page.dart';
 
 class AddPage extends StatefulWidget {
   const AddPage({super.key});
@@ -27,6 +27,20 @@ class AddPage extends StatefulWidget {
 class _AddPageState extends State<AddPage> {
   final ImagePicker _picker = ImagePicker();
   final Set<String> _processingTasks = <String>{};
+
+  // @override
+  // void initState() {
+  //   super.initState();
+  //   // final authState = context.read<UserBloc>().state;
+  //   //  BlocProvider.of<UserBloc>().state;
+
+  //   // if (authState is UserAuthenticated && authState.isAdmin) {
+  //   Navigator.pushReplacement(
+  //     context,
+  //     MaterialPageRoute(builder: (context) => HomePage(title: 'Error')),
+  //   );
+  //   // }
+  // }
 
   Future<void> _pickImages() async {
     try {
@@ -349,8 +363,8 @@ Future<Photo> _uploadedPhotoDefault(Reference photoRef, String email) async {
       'year': now.year,
       'month': now.month,
       'day': now.day,
+      ...exif,
     };
-    record = {...record, ...exif};
 
     return Photo.fromMap(record);
   } catch (e) {

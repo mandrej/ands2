@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../auth/bloc/user_bloc.dart';
 import '../find/cubit/find_cubit.dart';
 import '../photo/bloc/photo_bloc.dart';
+import '../widgets/menu.dart';
 import '../widgets/alert_box.dart';
 import '../widgets/find_form.dart';
 import '../widgets/simple_grid_view.dart';
@@ -27,27 +28,9 @@ class _ListPageState extends State<ListPage> {
 
   final Widget drawerContent = Builder(
     builder: (context) {
-      return Column(
-        children: [
-          FindForm(),
-          Spacer(),
-          _SidebarItem(
-            icon: Icons.home,
-            label: 'Home',
-            onTap: () => Navigator.pushNamed(context, '/'),
-          ),
-          _SidebarItem(
-            icon: Icons.add,
-            label: 'Add',
-            onTap: () => Navigator.pushNamed(context, '/add'),
-          ),
-          _SidebarItem(
-            icon: Icons.settings,
-            label: 'Admin',
-            onTap: () => Navigator.pushNamed(context, '/admin'),
-          ),
-          SizedBox(height: 8.0),
-        ],
+      return BlocProvider(
+        create: (context) => UserBloc(),
+        child: Column(children: [FindForm(), Spacer(), Menu()]),
       );
     },
   );
@@ -158,29 +141,5 @@ class _ListPageState extends State<ListPage> {
     final maxScroll = _scrollController.position.maxScrollExtent;
     final currentScroll = _scrollController.offset;
     return currentScroll >= (maxScroll * 0.7);
-  }
-}
-
-class _SidebarItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  const _SidebarItem({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      leading: Icon(icon, color: Theme.of(context).colorScheme.secondary),
-      title: Text(
-        label,
-        style: TextStyle(color: Theme.of(context).colorScheme.secondary),
-      ),
-      onTap: onTap,
-      // dense: true,
-    );
   }
 }

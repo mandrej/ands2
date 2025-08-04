@@ -48,7 +48,13 @@ class App extends StatelessWidget {
                   create: (context) => UploadedCubit(),
                 ),
               ],
-              child: const AddPage(),
+              child: BlocBuilder<UserBloc, UserState>(
+                builder: (context, state) {
+                  return state is UserAuthenticated && state.isFamily
+                      ? const AddPage()
+                      : HomePage(title: 'Error');
+                },
+              ),
             ),
         // '/examples/auto_suggest_multi_field':
       },
