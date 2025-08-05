@@ -56,7 +56,5 @@ Future<void> main() async {
   );
 
   Bloc.observer = const SimpleBlocObserver();
-  runApp(
-    BlocProvider<UserBloc>(create: (context) => UserBloc(), child: const App()),
-  );
+  runApp(BlocProvider<UserBloc>(create: (context) => UserBloc(), child: App()));
 }

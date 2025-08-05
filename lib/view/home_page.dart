@@ -1,3 +1,4 @@
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -125,13 +126,14 @@ class FrontImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final router = AutoRouter.of(context);
     return SizedBox(
       width: width,
       height: height,
       child: BlocBuilder<LastRecordCubit, LastRecordState>(
         builder: (context, state) {
           return ElevatedButton(
-            onPressed: () => Navigator.pushNamed(context, '/list'),
+            onPressed: () => router.pushPath('/list'),
             style: ElevatedButton.styleFrom(
               elevation: 16,
               padding: EdgeInsets.zero,
@@ -181,6 +183,7 @@ class FrontWelcome extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final router = AutoRouter.of(context);
     var values = context.read<AvailableValuesBloc>().state;
     var yearsList = values.year?.keys.toList() ?? [];
     yearsList.sort();
@@ -204,7 +207,7 @@ class FrontWelcome extends StatelessWidget {
                   return Column(
                     children: [
                       IconButton(
-                        onPressed: () => Navigator.pushNamed(context, '/add'),
+                        onPressed: () => router.pushPath('/add'),
                         icon: Icon(Icons.add),
                         style: IconButton.styleFrom(
                           iconSize: 40.0,

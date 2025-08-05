@@ -1,3 +1,4 @@
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../auth/bloc/user_bloc.dart';
@@ -7,6 +8,7 @@ class Menu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final router = AutoRouter.of(context);
     return BlocBuilder<UserBloc, UserState>(
       builder: (context, state) {
         return Column(
@@ -14,20 +16,20 @@ class Menu extends StatelessWidget {
             _SidebarItem(
               icon: Icons.home,
               label: 'Home',
-              onTap: () => Navigator.pushNamed(context, '/'),
+              onTap: () => router.pushPath('/'),
             ),
             state is UserAuthenticated && state.isFamily
                 ? _SidebarItem(
                   icon: Icons.add,
                   label: 'Add',
-                  onTap: () => Navigator.pushNamed(context, '/add'),
+                  onTap: () => router.pushPath('/add'),
                 )
                 : SizedBox.shrink(),
             state is UserAuthenticated && state.isAdmin
                 ? _SidebarItem(
                   icon: Icons.settings,
                   label: 'Admin',
-                  onTap: () => Navigator.pushNamed(context, '/admin'),
+                  onTap: () => router.pushPath('/admin'),
                 )
                 : SizedBox.shrink(),
           ],
