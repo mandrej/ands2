@@ -8,6 +8,7 @@ import '../task/cubit/upload_task_cubit.dart';
 import '../view/home_page.dart';
 import '../view/list_page.dart';
 import '../view/add_page.dart';
+import '../view/error_page.dart';
 
 @AutoRouterConfig()
 class AppRouter extends RootStackRouter {
@@ -50,11 +51,18 @@ class AppRouter extends RootStackRouter {
             BlocProvider(create: (context) => UploadTaskCubit()),
             BlocProvider(create: (context) => UploadedCubit()),
           ],
-          child: AddPage(),
+          child: AddPage(title: 'Add Photos'),
         );
       },
       guards: [AuthGuard()],
     ),
-    // RedirectRoute(path: '*', redirectTo: '/'),
+    NamedRouteDef(
+      name: 'Error',
+      path: '/error/:id',
+      builder: (context, data) {
+        return ErrorPage(title: 'Error', id: data.params.getInt('id'));
+      },
+    ),
+    RedirectRoute(path: '*', redirectTo: '/'),
   ];
 }

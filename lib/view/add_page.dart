@@ -17,7 +17,8 @@ import '../helpers/common.dart';
 import '../widgets/edit_dialog.dart';
 
 class AddPage extends StatefulWidget {
-  const AddPage({super.key});
+  const AddPage({super.key, required this.title});
+  final String title;
 
   @override
   State<AddPage> createState() => _AddPageState();
@@ -26,7 +27,6 @@ class AddPage extends StatefulWidget {
 class _AddPageState extends State<AddPage> {
   final ImagePicker _picker = ImagePicker();
   final Set<String> _processingTasks = <String>{};
-
   Future<void> _pickImages() async {
     try {
       final List<XFile> images = await _picker.pickMultiImage();
@@ -135,7 +135,7 @@ class _AddPageState extends State<AddPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Add Photos'),
+        title: Text(widget.title),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
       body: Column(

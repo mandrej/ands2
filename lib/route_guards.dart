@@ -12,6 +12,7 @@ class AuthGuard extends AutoRouteGuard {
       // if user is authenticated we continue
       resolver.next(true);
     } else {
+      router.replace(NamedRoute('Error', params: {'id': 1}));
       // we abort the navigation for unauthenticated users
       // they can manually navigate to the home page to sign in
       resolver.next(false);

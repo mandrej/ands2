@@ -1,4 +1,4 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -10,8 +10,9 @@ import 'package:path_provider/path_provider.dart';
 import 'package:url_strategy/url_strategy.dart';
 import 'firebase_options.dart';
 import 'simple_bloc_observer.dart';
-import 'app.dart';
 import 'auth/bloc/user_bloc.dart';
+import 'router.dart';
+import 'theme.dart';
 
 void handleFlutterError(FlutterErrorDetails details) {
   FlutterError.presentError(details);
@@ -57,4 +58,19 @@ Future<void> main() async {
 
   Bloc.observer = const SimpleBlocObserver();
   runApp(BlocProvider<UserBloc>(create: (context) => UserBloc(), child: App()));
+}
+
+class App extends StatelessWidget {
+  final _appRouter = AppRouter();
+  App({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp.router(
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: ThemeMode.system,
+      routerConfig: _appRouter.config(),
+    );
+  }
 }

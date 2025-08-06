@@ -26,11 +26,7 @@ class HomePage extends StatelessWidget {
         builder: (context, state) {
           final double screenWidth = MediaQuery.of(context).size.width;
           final double screenHeight = MediaQuery.of(context).size.height;
-          final bool valuesAvailable =
-              state.values?.email !=
-              null; // Check if email values are available
-          final userState = context.read<UserBloc>().state;
-          final bool userSignedIn = userState is UserAuthenticated;
+          final bool valuesAvailable = state.values?.email == null;
 
           return Scaffold(
             body: Center(
@@ -64,54 +60,7 @@ class HomePage extends StatelessWidget {
                               ),
                             ],
                           ))
-                      : Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          SvgPicture.asset(
-                            'assets/camera.svg',
-                            width: 100,
-                            colorFilter: ColorFilter.mode(
-                              Theme.of(context).primaryColor,
-                              BlendMode.srcIn,
-                            ),
-                            semanticsLabel: 'App Logo',
-                          ),
-                          Text(
-                            title,
-                            style: TextStyle(fontSize: 40),
-                            textAlign: TextAlign.center,
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Text(
-                              'No images yet\n Sign in with Google\n to add some',
-                              style: Theme.of(context).textTheme.bodySmall,
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                          if (!userSignedIn)
-                            FilledButton(
-                              onPressed: () async {
-                                context.read<UserBloc>().add(
-                                  UserSignInRequested(),
-                                );
-                              },
-                              child: Text('Sign in'),
-                            )
-                          else
-                            IconButton(
-                              onPressed:
-                                  () => Navigator.pushNamed(context, '/add'),
-                              icon: Icon(Icons.add),
-                              style: IconButton.styleFrom(
-                                iconSize: 40.0,
-                                backgroundColor: Theme.of(context).primaryColor,
-                                foregroundColor:
-                                    Theme.of(context).colorScheme.onPrimary,
-                              ),
-                            ),
-                        ],
-                      ),
+                      : Blank(title: title),
             ),
           );
         },
@@ -244,12 +193,6 @@ class FrontWelcome extends StatelessWidget {
                           return SizedBox.shrink();
                         },
                       ),
-                      TextButton(
-                        onPressed: () {
-                          context.read<UserBloc>().add(UserSignOutRequested());
-                        },
-                        child: Text('Sign out ${state.user.displayName}'),
-                      ),
                     ],
                   );
                 } else {
@@ -270,6 +213,78 @@ class FrontWelcome extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class Blank extends StatelessWidget {
+  const Blank({super.key, required this.title});
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final router = AutoRouter.of(context);
+    final userState = context.watch<UserBloc>().state;
+    final bool userSignedIn = userState is UserAuthenticated;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SvgPicture.asset(
+          'assets/camera.svg',
+          width: 100,
+          colorFilter: ColorFilter.mode(
+            Theme.of(context).primaryColor,
+            BlendMode.srcIn,
+          ),
+          semanticsLabel: 'App Logo',
+        ),
+        Text(title, style: TextStyle(fontSize: 40)),
+        const Text(
+          'No images yet ',
+          style: TextStyle(fontSize: 18, color: Colors.grey),
+        ),
+        if (!userSignedIn)
+          Column(
+            children: [
+              const SizedBox(height: 16),
+              Text(
+                'Sign in with Google to add some',
+                style: TextStyle(fontSize: 14, color: Colors.grey),
+              ),
+              const SizedBox(height: 16),
+              FilledButton(
+                onPressed: () async {
+                  context.read<UserBloc>().add(UserSignInRequested());
+                },
+                child: Text('Sign in'),
+              ),
+            ],
+          )
+        else
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 16),
+              IconButton(
+                onPressed: () => router.pushPath('/add'),
+                icon: Icon(Icons.add),
+                style: IconButton.styleFrom(
+                  iconSize: 40.0,
+                  backgroundColor: Theme.of(context).colorScheme.secondary,
+                  foregroundColor: Theme.of(context).colorScheme.onSecondary,
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextButton(
+                onPressed: () {
+                  context.read<UserBloc>().add(UserSignOutRequested());
+                },
+                child: Text('Sign out ${userState.user.displayName}'),
+              ),
+            ],
+          ),
+      ],
     );
   }
 }
