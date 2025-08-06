@@ -26,7 +26,7 @@ class HomePage extends StatelessWidget {
         builder: (context, state) {
           final double screenWidth = MediaQuery.of(context).size.width;
           final double screenHeight = MediaQuery.of(context).size.height;
-          final bool valuesAvailable = state.values?.email == null;
+          final bool valuesAvailable = state.values?.email != null;
 
           return Scaffold(
             body: Center(
@@ -192,6 +192,12 @@ class FrontWelcome extends StatelessWidget {
                           }
                           return SizedBox.shrink();
                         },
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          context.read<UserBloc>().add(UserSignOutRequested());
+                        },
+                        child: Text('Sign out ${state.user.displayName}'),
                       ),
                     ],
                   );
