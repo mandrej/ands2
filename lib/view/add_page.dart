@@ -9,7 +9,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import '../task/cubit/upload_task_cubit.dart';
-import '../photo/cubit/uploaded_cubit.dart';
+import '../photo/bloc/uploadphoto_bloc.dart';
 import '../auth/bloc/user_bloc.dart';
 import '../photo/models/photo.dart';
 import '../helpers/read_exif.dart';
@@ -39,7 +39,6 @@ class _AddPageState extends State<AddPage> {
         }
       }
     } catch (e) {
-      print('Error picking images: $e');
       if (mounted) {
         ScaffoldMessenger.of(
           context,
@@ -58,7 +57,6 @@ class _AddPageState extends State<AddPage> {
         }
       }
     } catch (e) {
-      print('Error taking photo: $e');
       if (mounted) {
         ScaffoldMessenger.of(
           context,
@@ -85,28 +83,26 @@ class _AddPageState extends State<AddPage> {
     _processingTasks.add(taskId);
 
     try {
-      print('Processing upload completion for: $taskId');
-
       // Create photo record
       final photo = await _uploadedPhotoDefault(task.snapshot.ref, email);
 
       if (!mounted) return;
 
-      if (!context.read<UploadedCubit>().contains(photo)) {
-        context.read<UploadedCubit>().addUploaded(photo);
-        print('Photo added successfully: ${photo.filename}');
-      } else {
-        print('Photo already exists in UploadedCubit: ${photo.filename}');
-      }
+      // if (!context.read<UploadedCubit>().contains(photo)) {
+      //   context.read<UploadedCubit>().addUploaded(photo);
+      //   print('Photo added successfully: ${photo.filename}');
+      // } else {
+      //   print('Photo already exists in UploadedCubit: ${photo.filename}');
+      // }
 
       await Future.delayed(const Duration(milliseconds: 50));
 
       if (mounted) {
         context.read<UploadTaskCubit>().remove(task);
-        print('Upload task removed successfully: $taskId');
+        context.read<UploadphotoBloc>().add(AddUploaded(photo));
+        print('Task removed and add to UploadphotoBloc successfully: $taskId');
       }
     } catch (error) {
-      print('Error processing upload completion: $error');
       if (mounted) {
         context.read<UploadTaskCubit>().remove(task);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -119,7 +115,7 @@ class _AddPageState extends State<AddPage> {
   }
 
   void _deleteUploadedPhoto(Photo photo) {
-    context.read<UploadedCubit>().removeUploaded(photo);
+    context.read<UploadphotoBloc>().add(RemoveUploaded(photo));
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Photo "${photo.headline}" deleted')),
     );
@@ -205,9 +201,9 @@ class _AddPageState extends State<AddPage> {
 
           // Uploaded images grid section
           Expanded(
-            child: BlocBuilder<UploadedCubit, UploadedState>(
+            child: BlocBuilder<UploadphotoBloc, UploadphotoState>(
               builder: (context, uploadedState) {
-                if (uploadedState is UploadedLoaded &&
+                if (uploadedState is UploadphotoLoaded &&
                     uploadedState.isNotEmpty) {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -342,7 +338,6 @@ Future<Photo> _uploadedPhotoDefault(Reference photoRef, String email) async {
       'email': email,
       'nick': nickEmail(email),
       'tags': <String>[],
-      'thumb': url,
       'model': 'UNKNOWN',
       'date': DateFormat(formatDate).format(now),
       'year': now.year,
@@ -492,13 +487,13 @@ class ItemThumbnail extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.delete, color: Colors.red),
+                    icon: const Icon(Icons.delete, color: Colors.grey),
                     onPressed: onDelete,
                     tooltip: 'Delete',
                   ),
                   if (onEdit != null)
                     IconButton(
-                      icon: const Icon(Icons.edit, color: Colors.blue),
+                      icon: const Icon(Icons.edit, color: Colors.grey),
                       onPressed: onEdit,
                       tooltip: 'Edit',
                     ),

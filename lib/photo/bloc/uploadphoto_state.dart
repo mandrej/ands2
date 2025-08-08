@@ -1,10 +1,26 @@
 part of 'uploadphoto_bloc.dart';
 
-sealed class UploadphotoState extends Equatable {
+abstract class UploadphotoState extends Equatable {
   const UploadphotoState();
-  
+
   @override
   List<Object> get props => [];
 }
 
-final class UploadphotoInitial extends UploadphotoState {}
+class UploadphotoInitial extends UploadphotoState {
+  const UploadphotoInitial();
+}
+
+class UploadphotoLoaded extends UploadphotoState {
+  final List<Photo> photos;
+
+  const UploadphotoLoaded(this.photos);
+
+  @override
+  List<Object> get props => [photos];
+
+  bool get isEmpty => photos.isEmpty;
+  bool get isNotEmpty => photos.isNotEmpty;
+  int get length => photos.length;
+  Photo operator [](int index) => photos[index];
+}

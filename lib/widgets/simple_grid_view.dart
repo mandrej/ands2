@@ -79,7 +79,7 @@ class ItemThumbnail extends StatelessWidget {
                       AspectRatio(
                         aspectRatio: 1,
                         child: Image.network(
-                          record.thumb as String,
+                          record.thumb ?? record.url,
                           fit: BoxFit.cover,
                         ),
                       ),

@@ -156,7 +156,7 @@ final class Photo extends Equatable {
       email: map['email'] as String,
       nick: map['nick'] as String,
       url: map['url'] as String,
-      thumb: map['thumb'] as String,
+      thumb: map['thumb'] as String?,
       date: map['date'] as String,
       year: map['year'] as int,
       month: map['month'] as int,

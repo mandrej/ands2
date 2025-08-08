@@ -1,3 +1,5 @@
+import 'package:ands2/photo/bloc/uploadphoto_bloc.dart';
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../photo/bloc/photo_bloc.dart';
@@ -27,8 +29,9 @@ class _EditDialogState extends State<EditDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
+    final router = AutoRouter.of(context);
     final controllerHeadline = TextEditingController(text: _record['headline']);
+    final width = MediaQuery.of(context).size.width;
 
     return MultiBlocProvider(
       providers: [
@@ -42,7 +45,7 @@ class _EditDialogState extends State<EditDialog> {
         appBar: AppBar(
           leading: IconButton(
             icon: Icon(Icons.close), // Close button
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => router.back(),
           ),
           title: Text('Edit'),
           actions: [
@@ -54,14 +57,15 @@ class _EditDialogState extends State<EditDialog> {
                     child: const Text('Save'),
                     onPressed: () {
                       _formKey.currentState!.save();
-                      if (_record['thumb'] == _record['url']) {
-                        print('\n\nNew photo $_record');
-                        // PhotoBloc().add(PhotoUpdate(_record as Photo));
+                      if (_record['thumb'] == null) {
+                        PhotoBloc().add(PhotoAdd(Photo.fromMap(_record)));
+                        UploadphotoBloc().add(
+                          RemoveUploaded(Photo.fromMap(_record)),
+                        );
                       } else {
-                        print('\n\nEdited photo $_record');
-                        // PhotoBloc().add(PhotoAdd(_record as Photo));
+                        PhotoBloc().add(PhotoUpdate(Photo.fromMap(_record)));
                       }
-                      Navigator.of(context).pop();
+                      router.back();
                     },
                   ),
                 ],
@@ -81,7 +85,7 @@ class _EditDialogState extends State<EditDialog> {
                     child: Column(
                       children: [
                         Image.network(
-                          _record['thumb'],
+                          _record['thumb'] ?? _record['url'],
                           width: 400,
                           // height: 400,
                           fit: BoxFit.cover,

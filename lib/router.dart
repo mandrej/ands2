@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../route_guards.dart';
 import '../photo/bloc/photo_bloc.dart';
 import '../find/cubit/find_cubit.dart';
-import '../photo/cubit/uploaded_cubit.dart';
+import '../photo/bloc/uploadphoto_bloc.dart';
 import '../task/cubit/upload_task_cubit.dart';
 import '../view/home_page.dart';
 import '../view/list_page.dart';
@@ -49,7 +49,7 @@ class AppRouter extends RootStackRouter {
         return MultiBlocProvider(
           providers: [
             BlocProvider(create: (context) => UploadTaskCubit()),
-            BlocProvider(create: (context) => UploadedCubit()),
+            BlocProvider(create: (context) => UploadphotoBloc()),
           ],
           child: AddPage(title: 'Add Photos'),
         );

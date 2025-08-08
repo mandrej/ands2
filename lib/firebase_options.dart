@@ -62,4 +62,5 @@ class DefaultFirebaseOptions {
     storageBucket: 'andrejevici.appspot.com',
     measurementId: 'G-4HF1XHQ8Y6',
   );
+
 }
