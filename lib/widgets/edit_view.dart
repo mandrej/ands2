@@ -7,8 +7,8 @@ class EditView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+    return SizedBox(
+      width: double.infinity,
       child: BlocBuilder<UserBloc, UserState>(
         builder: (context, state) {
           if (state.isAdmin || state.isFamily) {

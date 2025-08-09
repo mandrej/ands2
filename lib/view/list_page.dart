@@ -10,8 +10,7 @@ import '../widgets/simple_grid_view.dart';
 import '../widgets/edit_view.dart';
 
 class ListPage extends StatefulWidget {
-  const ListPage({super.key, required this.title});
-  final String title;
+  const ListPage({super.key});
 
   @override
   State<ListPage> createState() => _ListPageState();
@@ -28,94 +27,86 @@ class _ListPageState extends State<ListPage> {
 
   final Widget drawerContent = Builder(
     builder: (context) {
-      return BlocProvider(
-        create: (context) => UserBloc(),
-        child: Column(children: [FindForm(), Spacer(), Menu()]),
+      return BlocProvider.value(
+        value: context.read<UserBloc>(),
+        child: Column(children: [EditView(), FindForm(), Spacer(), Menu()]),
       );
     },
   );
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => UserBloc(),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          bool isLargeScreen = constraints.maxWidth >= 600;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        bool isLargeScreen = constraints.maxWidth >= 600;
 
-          return Scaffold(
-            appBar: AppBar(
-              title: Text(widget.title),
-              actions: <Widget>[EditView()],
-              backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-            ),
-            drawer: isLargeScreen ? null : Drawer(child: drawerContent),
-            body: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (isLargeScreen)
-                  Container(
-                    width: 250,
-                    color: Theme.of(context).colorScheme.surface,
-                    child: drawerContent,
-                  ),
-                Expanded(
-                  child: BlocListener<FindCubit, FindState>(
-                    listener: (context, findState) {
-                      // When FindCubit state changes, notify PhotoBloc
-                      context.read<PhotoBloc>().add(
-                        PhotoFetched(findState: findState),
-                      );
+        return Scaffold(
+          drawer: isLargeScreen ? null : Drawer(child: drawerContent),
+          body: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (isLargeScreen)
+                Container(
+                  width: 250,
+                  color: Theme.of(context).colorScheme.surface,
+                  child: drawerContent,
+                ),
+              Expanded(
+                child: BlocListener<FindCubit, FindState>(
+                  listener: (context, findState) {
+                    // When FindCubit state changes, notify PhotoBloc
+                    context.read<PhotoBloc>().add(
+                      PhotoFetched(findState: findState),
+                    );
+                  },
+                  child: BlocBuilder<PhotoBloc, PhotoState>(
+                    buildWhen: (previous, current) {
+                      if (previous.records.length != current.records.length) {
+                        return true;
+                      }
+                      return false;
                     },
-                    child: BlocBuilder<PhotoBloc, PhotoState>(
-                      buildWhen: (previous, current) {
-                        if (previous.records.length != current.records.length) {
-                          return true;
-                        }
-                        return false;
-                      },
-                      builder: (context, state) {
-                        switch (state.status) {
-                          case PhotoStatus.failure:
+                    builder: (context, state) {
+                      switch (state.status) {
+                        case PhotoStatus.failure:
+                          return const AlertBox(
+                            title: 'Error',
+                            content: 'Failed to fetch records.',
+                          );
+                        case PhotoStatus.success:
+                          if (state.records.isEmpty) {
                             return const AlertBox(
-                              title: 'Error',
-                              content: 'Failed to fetch records.',
+                              title: 'No Records',
+                              content: 'No records found. Please try again.',
                             );
-                          case PhotoStatus.success:
-                            if (state.records.isEmpty) {
-                              return const AlertBox(
-                                title: 'No Records',
-                                content: 'No records found. Please try again.',
-                              );
-                            }
-                            return Column(
-                              children: [
-                                Expanded(
-                                  child: SingleChildScrollView(
-                                    controller: _scrollController,
-                                    child: Column(
-                                      children: [
-                                        SimpleGridView(records: state.records),
-                                      ],
-                                    ),
+                          }
+                          return Column(
+                            children: [
+                              Expanded(
+                                child: SingleChildScrollView(
+                                  controller: _scrollController,
+                                  child: Column(
+                                    children: [
+                                      SimpleGridView(records: state.records),
+                                    ],
                                   ),
                                 ),
-                              ],
-                            );
-                          case PhotoStatus.initial:
-                            return const Center(
-                              child: CircularProgressIndicator(),
-                            );
-                        }
-                      },
-                    ),
+                              ),
+                            ],
+                          );
+                        case PhotoStatus.initial:
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+                      }
+                    },
                   ),
                 ),
-              ],
-            ),
-          );
-        },
-      ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 

@@ -1,4 +1,3 @@
-import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../photo/bloc/photo_bloc.dart';
@@ -10,7 +9,6 @@ class DeleteDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final router = AutoRouter.of(context);
     return BlocProvider<PhotoBloc>(
       create: (context) => PhotoBloc(),
       child: Builder(
@@ -32,7 +30,7 @@ class DeleteDialog extends StatelessWidget {
                 child: const Text('Delete'),
                 onPressed: () {
                   context.read<PhotoBloc>().add(PhotoDelete(record.filename));
-                  router.back();
+                  Navigator.of(context).pop();
                 },
               ),
             ],

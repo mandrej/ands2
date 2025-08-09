@@ -1,6 +1,7 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../route_guards.dart';
+import '../auth/bloc/user_bloc.dart';
 import '../photo/bloc/photo_bloc.dart';
 import '../find/cubit/find_cubit.dart';
 import '../photo/bloc/uploadphoto_bloc.dart';
@@ -29,15 +30,18 @@ class AppRouter extends RootStackRouter {
       name: 'List',
       path: '/list', // optional
       builder: (context, data) {
-        return BlocProvider(
-          create: (context) => FindCubit(),
+        return MultiBlocProvider(
+          providers: [
+            BlocProvider(create: (context) => FindCubit()),
+            BlocProvider(create: (context) => UserBloc()),
+          ],
           child: BlocProvider(
             create:
                 (context) =>
                     PhotoBloc()..add(
                       PhotoFetched(findState: context.read<FindCubit>().state),
                     ),
-            child: ListPage(title: 'Andrejeвићи'),
+            child: ListPage(),
           ),
         );
       },

@@ -57,15 +57,14 @@ class _EditDialogState extends State<EditDialog> {
                     child: const Text('Save'),
                     onPressed: () {
                       _formKey.currentState!.save();
+                      Photo photo = Photo.fromMap(_record);
                       if (_record['thumb'] == null) {
-                        PhotoBloc().add(PhotoAdd(Photo.fromMap(_record)));
-                        UploadphotoBloc().add(
-                          RemoveUploaded(Photo.fromMap(_record)),
-                        );
+                        PhotoBloc().add(PhotoAdd(photo));
+                        UploadphotoBloc().add(RemoveUploaded(photo));
                       } else {
-                        PhotoBloc().add(PhotoUpdate(Photo.fromMap(_record)));
+                        PhotoBloc().add(PhotoUpdate(photo));
                       }
-                      router.back();
+                      Navigator.of(context).pop();
                     },
                   ),
                 ],

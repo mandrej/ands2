@@ -16,9 +16,9 @@ class SimpleGridView extends StatelessWidget {
     return GridView(
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: MediaQuery.of(context).size.width ~/ 320,
-        mainAxisSpacing: 8.0,
-        crossAxisSpacing: 8.0,
-        childAspectRatio: 1,
+        // mainAxisSpacing: 8.0,
+        // crossAxisSpacing: 8.0,
+        // childAspectRatio: 1,
       ),
       shrinkWrap: true,
       children:
@@ -56,7 +56,7 @@ class ItemThumbnail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final TextTheme textTheme = Theme.of(context).textTheme;
+    // final TextTheme textTheme = Theme.of(context).textTheme;
 
     return GestureDetector(
       onTap: onTap,
@@ -64,12 +64,9 @@ class ItemThumbnail extends StatelessWidget {
         tag: record.filename,
         child: Builder(
           builder: (context) {
-            // Removed EditModeCubit dependency
-            final editMode =
-                context
-                    .watch<UserBloc>()
-                    .state
-                    .isEditing; // Default to non-edit mode
+            final editMode = context.select<UserBloc, bool>(
+              (bloc) => bloc.state.isEditing,
+            );
             return Card(
               clipBehavior: Clip.antiAliasWithSaveLayer,
               child: Column(
@@ -108,7 +105,9 @@ class ItemThumbnail extends StatelessWidget {
                           child: Text(
                             record.headline,
                             overflow: TextOverflow.ellipsis,
-                            style: textTheme.titleMedium?.copyWith(
+                            style: Theme.of(
+                              context,
+                            ).textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.normal,
                               color: Colors.white,
                             ),
