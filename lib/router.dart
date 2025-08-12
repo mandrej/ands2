@@ -1,15 +1,16 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../route_guards.dart';
-import '../auth/bloc/user_bloc.dart';
-import '../photo/bloc/photo_bloc.dart';
-import '../find/cubit/find_cubit.dart';
-import '../photo/bloc/uploadphoto_bloc.dart';
-import '../task/cubit/upload_task_cubit.dart';
-import '../view/home_page.dart';
-import '../view/list_page.dart';
-import '../view/add_page.dart';
-import '../view/error_page.dart';
+import 'route_guards.dart';
+import 'auth/bloc/user_bloc.dart';
+import 'photo/bloc/photo_bloc.dart';
+import 'find/cubit/find_cubit.dart';
+import 'photo/bloc/uploadphoto_bloc.dart';
+import 'task/cubit/upload_task_cubit.dart';
+import 'view/home_page.dart';
+import 'view/list_page.dart';
+// import 'view/add_page.dart';
+import 'view/upload_page.dart';
+import 'view/error_page.dart';
 
 @AutoRouterConfig()
 class AppRouter extends RootStackRouter {
@@ -52,10 +53,11 @@ class AppRouter extends RootStackRouter {
       builder: (context, data) {
         return MultiBlocProvider(
           providers: [
-            BlocProvider(create: (context) => UploadTaskCubit()),
             BlocProvider(create: (context) => UploadphotoBloc()),
+            BlocProvider(create: (context) => UploadTaskCubit()),
+            BlocProvider(create: (context) => UserBloc()),
           ],
-          child: AddPage(title: 'Add Photos'),
+          child: UploadGridPage(),
         );
       },
       guards: [AuthGuard()],

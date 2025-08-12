@@ -173,4 +173,8 @@ final class Photo extends Equatable {
       text: map['text']?.cast<String>(),
     );
   }
+
+  factory Photo.fromJson(Map<String, dynamic> json) => Photo.fromMap(json);
+
+  Map<String, dynamic> toJson() => toMap();
 }

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io' as io;
 
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -72,45 +73,58 @@ class _AddPageState extends State<AddPage> {
   }
 
   Future<void> _handleUploadCompletion(UploadTask task, String email) async {
-    final taskId = task.snapshot.ref.name;
+    // include fullPath so tasks with the same name won't collide
+    final path = task.snapshot.ref.fullPath;
+    final taskKey = '${task.hashCode}::$path';
 
-    // Prevent duplicate processing
-    if (_processingTasks.contains(taskId)) {
-      print('Task $taskId already being processed, skipping');
+    if (_processingTasks.contains(taskKey)) {
+      print('Task $taskKey already processed, skipping');
       return;
     }
-
-    _processingTasks.add(taskId);
+    _processingTasks.add(taskKey);
 
     try {
-      // Create photo record
-      final photo = await _uploadedPhotoDefault(task.snapshot.ref, email);
+      // Ensure the upload is fully finished. Awaiting the task returns a TaskSnapshot.
+      firebase_storage.TaskSnapshot snapshot;
+      try {
+        snapshot = await task;
+      } catch (e) {
+        // Fallback to whenComplete if awaiting the task throws for some reason
+        print('Awaiting upload task failed, falling back to whenComplete: $e');
+        await task.whenComplete(() {});
+        snapshot = task.snapshot;
+      }
+
+      // Defensive: check snapshot state if available
+      if (snapshot.state != firebase_storage.TaskState.success) {
+        print(
+          'Upload task completed but state is not success: ${snapshot.state}',
+        );
+        // still attempt to read the file below; it may become available shortly
+      }
+
+      final photo = await _uploadedPhotoDefault(snapshot.ref, email);
 
       if (!mounted) return;
-
-      // if (!context.read<UploadedCubit>().contains(photo)) {
-      //   context.read<UploadedCubit>().addUploaded(photo);
-      //   print('Photo added successfully: ${photo.filename}');
-      // } else {
-      //   print('Photo already exists in UploadedCubit: ${photo.filename}');
-      // }
-
+      // tiny delay so UI can settle (keeps old behavior)
       await Future.delayed(const Duration(milliseconds: 50));
 
       if (mounted) {
         context.read<UploadTaskCubit>().remove(task);
         context.read<UploadphotoBloc>().add(AddUploaded(photo));
-        print('Task removed and add to UploadphotoBloc successfully: $taskId');
+        print('Task removed and added to UploadphotoBloc: $taskKey');
       }
-    } catch (error) {
+    } catch (error, st) {
+      print('Error in _handleUploadCompletion for $taskKey: $error\n$st');
       if (mounted) {
+        // remove the task so the user can retry or it won't hang in UI
         context.read<UploadTaskCubit>().remove(task);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error processing photo: $error')),
         );
       }
     } finally {
-      _processingTasks.remove(taskId);
+      _processingTasks.remove(taskKey);
     }
   }
 
@@ -181,10 +195,10 @@ class _AddPageState extends State<AddPage> {
                         (task) => UploadTaskListTile(
                           task: task,
                           onUploadComplete: _handleUploadCompletion,
-                          onDelete: () {
-                            task.cancel();
-                            context.read<UploadTaskCubit>().remove(task);
-                          },
+                          // onDelete: () {
+                          //   task.cancel();
+                          //   context.read<UploadTaskCubit>().remove(task);
+                          // },
                         ),
                       ),
                       const Divider(),
@@ -321,128 +335,124 @@ Future<UploadTask?> uploadFile(XFile? file) async {
 }
 
 Future<Photo> _uploadedPhotoDefault(Reference photoRef, String email) async {
-  try {
-    final url = await photoRef.getDownloadURL();
-    final metadata = await photoRef.getMetadata();
-    final now = DateTime.now();
-    final exif = await readExif(photoRef.name);
+  const int maxRetries = 6;
+  int attempt = 0;
 
-    Map<String, dynamic> record = {
-      'filename': photoRef.name,
-      'url': url,
-      'size': metadata.size ?? 0,
-      'headline': 'No name',
-      'email': email,
-      'nick': nickEmail(email),
-      'tags': <String>[],
-      'model': 'UNKNOWN',
-      'date': DateFormat(formatDate).format(now),
-      'year': now.year,
-      'month': now.month,
-      'day': now.day,
-      ...exif,
-    };
+  while (true) {
+    try {
+      // Try to read URL + metadata
+      final url = await photoRef.getDownloadURL();
+      final metadata = await photoRef.getMetadata();
+      final now = DateTime.now();
 
-    return Photo.fromMap(record);
-  } catch (e) {
-    print('Error creating photo record: $e');
-    rethrow;
+      // readExif might rely on the filename or other helpers you have
+      final exif = await readExif(photoRef.name);
+
+      final Map<String, dynamic> record = {
+        'filename': photoRef.name,
+        'url': url,
+        'size': metadata.size ?? 0,
+        'headline': 'No name',
+        'email': email,
+        'nick': nickEmail(email),
+        'tags': <String>[],
+        'model': 'UNKNOWN',
+        'date': DateFormat(formatDate).format(now),
+        'year': now.year,
+        'month': now.month,
+        'day': now.day,
+        ...exif,
+      };
+
+      return Photo.fromMap(record);
+    } on firebase_storage.FirebaseException catch (e) {
+      // Storage errors can return different codes depending on plugin/version.
+      final code = e.code;
+      final isNotFound =
+          code.contains('object-not-found') || code.contains('not-found');
+
+      if (isNotFound && attempt < maxRetries) {
+        attempt++;
+        final delay = Duration(milliseconds: 300 * attempt);
+        print(
+          'Storage object not found for ${photoRef.fullPath} (attempt $attempt/$maxRetries). Retrying in ${delay.inMilliseconds}ms...',
+        );
+        await Future.delayed(delay);
+        continue; // try again
+      }
+
+      // Non-retryable or max attempts reached -> rethrow for upper handler
+      print('Error creating photo record (storage): $e');
+      rethrow;
+    } catch (e) {
+      // Other errors (e.g. readExif failures), rethrow so caller can handle
+      print('Error creating photo record: $e');
+      rethrow;
+    }
   }
 }
 
 class UploadTaskListTile extends StatefulWidget {
-  // ignore: public_member_api_docs
+  final firebase_storage.UploadTask task;
+  final void Function(firebase_storage.UploadTask task, String email)
+  onUploadComplete;
+
   const UploadTaskListTile({
     super.key,
     required this.task,
-    required this.onDelete,
     required this.onUploadComplete,
   });
 
-  final UploadTask task;
-  final VoidCallback onDelete;
-  final Future<void> Function(UploadTask task, String email) onUploadComplete;
-
   @override
-  State<UploadTaskListTile> createState() => _UploadTaskListTileState();
+  // ignore: library_private_types_in_public_api
+  _UploadTaskListTileState createState() => _UploadTaskListTileState();
 }
 
-class _UploadTaskListTileState extends State<UploadTaskListTile>
-    with TickerProviderStateMixin {
-  late AnimationController controller;
-  bool _hasProcessedSuccess = false;
-
+class _UploadTaskListTileState extends State<UploadTaskListTile> {
   @override
   void initState() {
     super.initState();
-    controller = AnimationController(vsync: this, value: 0.0)..addListener(() {
-      setState(() {});
-    });
-  }
 
-  @override
-  void dispose() {
-    controller.dispose();
-    super.dispose();
+    final task = widget.task;
+    final auth = context.read<UserBloc>().state;
+
+    void triggerCompletion() {
+      if (auth is UserAuthenticated) {
+        final email = auth.user.email;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            widget.onUploadComplete(task, email);
+          }
+        });
+      }
+    }
+
+    // ✅ Case 1: Task already finished before widget is built
+    if (task.snapshot.state == firebase_storage.TaskState.success) {
+      triggerCompletion();
+    } else {
+      // ✅ Case 2: Still uploading — attach completion listener
+      task.whenComplete(triggerCompletion);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<TaskSnapshot>(
+    return StreamBuilder<firebase_storage.TaskSnapshot>(
       stream: widget.task.snapshotEvents,
-      builder: (
-        BuildContext context,
-        AsyncSnapshot<TaskSnapshot> asyncSnapshot,
-      ) {
-        var info = '';
-        TaskSnapshot? snapshot = asyncSnapshot.data;
-        TaskState? state = snapshot?.state;
+      builder: (context, snapshot) {
+        if (snapshot.hasData) {
+          final snap = snapshot.data!;
+          final progress = snap.bytesTransferred / snap.totalBytes;
+          final percentage = (progress * 100).toStringAsFixed(2);
 
-        if (asyncSnapshot.hasError) {
-          if (asyncSnapshot.error is FirebaseException &&
-              (asyncSnapshot.error as FirebaseException).code == 'canceled') {
-            info = 'Upload canceled.';
-          } else {
-            info = 'Something went wrong.';
-          }
-        } else if (snapshot != null) {
-          if (state == TaskState.success && !_hasProcessedSuccess) {
-            _hasProcessedSuccess = true;
-            print(
-              'Upload task completed successfully for: ${snapshot.ref.name}',
-            );
-            final auth = context.read<UserBloc>().state;
-            if (auth is! UserAuthenticated) {
-              print('User not authenticated, skipping photo processing');
-              return const SizedBox();
-            }
-            final email = auth.user.email;
-
-            // Use the centralized upload completion handler
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) {
-                widget.onUploadComplete(widget.task, email);
-              }
-            });
-          }
+          return ListTile(
+            title: Text(snap.ref.name),
+            subtitle: Text('$percentage %'),
+          );
+        } else {
+          return const ListTile(title: Text('Uploading...'));
         }
-        return ListTile(
-          title: Text('${widget.task.snapshot.ref.name} $info'),
-          subtitle: LinearProgressIndicator(
-            value:
-                widget.task.snapshot.bytesTransferred /
-                widget.task.snapshot.totalBytes,
-          ),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              IconButton(
-                icon: const Icon(Icons.delete),
-                onPressed: widget.onDelete,
-              ),
-            ],
-          ),
-        );
       },
     );
   }

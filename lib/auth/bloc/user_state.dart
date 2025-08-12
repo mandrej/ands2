@@ -24,6 +24,8 @@ abstract class UserState extends Equatable {
 
   @override
   List<Object?> get props => [];
+
+  get user => null;
 }
 
 class UserInitial extends UserState {
