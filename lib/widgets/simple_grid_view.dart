@@ -16,9 +16,9 @@ class SimpleGridView extends StatelessWidget {
     return GridView(
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: MediaQuery.of(context).size.width ~/ 320,
-        // mainAxisSpacing: 8.0,
-        // crossAxisSpacing: 8.0,
-        // childAspectRatio: 1,
+        crossAxisSpacing: 4,
+        mainAxisSpacing: 4,
+        childAspectRatio: 1,
       ),
       shrinkWrap: true,
       children:

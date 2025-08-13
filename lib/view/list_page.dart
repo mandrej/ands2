@@ -80,19 +80,22 @@ class _ListPageState extends State<ListPage> {
                               content: 'No records found. Please try again.',
                             );
                           }
-                          return Column(
-                            children: [
-                              Expanded(
-                                child: SingleChildScrollView(
-                                  controller: _scrollController,
-                                  child: Column(
-                                    children: [
-                                      SimpleGridView(records: state.records),
-                                    ],
+                          return Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Column(
+                              children: [
+                                Expanded(
+                                  child: SingleChildScrollView(
+                                    controller: _scrollController,
+                                    child: Column(
+                                      children: [
+                                        SimpleGridView(records: state.records),
+                                      ],
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           );
                         case PhotoStatus.initial:
                           return const Center(
