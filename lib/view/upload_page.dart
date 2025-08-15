@@ -7,9 +7,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dropzone/flutter_dropzone.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:intl/intl.dart';
 import 'package:mime/mime.dart';
 import 'package:uuid/uuid.dart';
 import '../helpers/common.dart';
+import '../helpers/read_exif.dart';
+import '../photo/models/photo.dart';
+import '../widgets/edit_dialog.dart';
 
 class UploadGridPage extends StatefulWidget {
   const UploadGridPage({super.key});
@@ -26,6 +30,32 @@ class _UploadGridPageState extends State<UploadGridPage> {
   final storage = FirebaseStorage.instance;
   bool _isUploading = false;
 
+  Future<void> _photoDefault(
+    String fileName,
+    String downloadUrl,
+    int? size,
+  ) async {
+    final now = DateTime.now();
+    final exif = await readExif(fileName);
+    await FirebaseFirestore.instance.collection('Photo').doc(fileName).set({
+      'filename': fileName,
+      'url': downloadUrl,
+      'size': size ?? 0,
+      'headline': 'No name',
+      'email': user.email,
+      'nick': nickEmail(user.email!),
+      'tags': <String>[],
+      'model': 'UNKNOWN',
+      'date': DateFormat(formatDate).format(now),
+      'year': now.year,
+      'month': now.month,
+      'day': now.day,
+      ...exif,
+      'unbound': true,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+  }
+
   Future<void> _handleDroppedFiles(List<DropzoneFileInterface>? files) async {
     if (files == null || files.isEmpty) return;
     setState(() => _isUploading = true);
@@ -33,7 +63,6 @@ class _UploadGridPageState extends State<UploadGridPage> {
     List<Future> uploadTasks =
         files.map((file) async {
           final String fileName = '${const Uuid().v4()}___${file.name}';
-          print(fileName);
           Reference ref = storage.ref().child(fileName);
 
           final bytes = await _dropZoneController!.getFileData(file);
@@ -41,31 +70,18 @@ class _UploadGridPageState extends State<UploadGridPage> {
           if (mime.isEmpty) {
             mime = lookupMimeType(file.name) ?? 'application/octet-stream';
           }
+          final size = await _dropZoneController!.getFileSize(file);
 
           if (kIsWeb) {
-            // Web: upload from memory
             await ref.putData(bytes, SettableMetadata(contentType: mime));
-            // await ref.putData(bytes);
           } else {
-            // Desktop: write temp file and upload
             final tempFile = File('${Directory.systemTemp.path}/$fileName');
             await tempFile.writeAsBytes(bytes);
             await ref.putFile(tempFile, SettableMetadata(contentType: mime));
           }
 
           String downloadUrl = await ref.getDownloadURL();
-
-          await FirebaseFirestore.instance
-              .collection('Photo')
-              .doc(fileName)
-              .set({
-                'url': downloadUrl,
-                'email': user.email,
-                'nick': nickEmail(user.email!),
-                'filename': fileName,
-                'published': false,
-                'createdAt': FieldValue.serverTimestamp(),
-              });
+          _photoDefault(fileName, downloadUrl, size);
         }).toList();
     _errorHandling(uploadTasks);
   }
@@ -86,12 +102,11 @@ class _UploadGridPageState extends State<UploadGridPage> {
           if (mime == null || mime.isEmpty) {
             mime = lookupMimeType(img.path) ?? 'application/octet-stream';
           }
+          final size = await img.length();
 
           if (kIsWeb) {
-            // Web: use putData with bytes
             await ref.putData(bytes, SettableMetadata(contentType: mime));
           } else {
-            // Mobile/desktop: use putFile
             await ref.putFile(
               File(img.path),
               SettableMetadata(contentType: mime),
@@ -99,18 +114,7 @@ class _UploadGridPageState extends State<UploadGridPage> {
           }
 
           String downloadUrl = await ref.getDownloadURL();
-
-          await FirebaseFirestore.instance
-              .collection('Photo')
-              .doc(fileName)
-              .set({
-                'url': downloadUrl,
-                'email': user.email,
-                'nick': nickEmail(user.email!),
-                'filename': fileName,
-                'published': false,
-                'createdAt': FieldValue.serverTimestamp(),
-              });
+          _photoDefault(fileName, downloadUrl, size);
         }).toList();
 
     _errorHandling(uploadTasks);
@@ -160,30 +164,17 @@ class _UploadGridPageState extends State<UploadGridPage> {
     }
   }
 
-  Future<void> _editImage(String filename) async {
-    // final XFile? newImage = await _picker.pickImage(
-    //   source: ImageSource.gallery,
-    // );
-    // if (newImage == null) return;
-
-    // String fileName = newImage.name;
-    //DateTime.now().millisecondsSinceEpoch.toString();
-    Reference ref = storage.ref().child(filename);
-    // if (kIsWeb) {
-    //   final bytes = await newImage.readAsBytes();
-    //   await ref.putData(bytes);
-    // } else {
-    //   await ref.putFile(File(newImage.path));
-    // }
-    // await ref.putFile(File(newImage.path));
-    String newUrl = await ref.getDownloadURL();
-
-    // await FirebaseFirestore.instance.collection('Photo').doc(docId).update({
-    //   'url': newUrl,
-    // });
+  void _editImage(Map<String, dynamic> record) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => EditDialog(editRecord: Photo.fromMap(record)),
+      ),
+    );
   }
 
   @override
+  /// Builds the UI for the UploadPage, which displays a form for uploading
+  /// images and a grid of uploaded images.
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -230,7 +221,7 @@ class _UploadGridPageState extends State<UploadGridPage> {
                 stream:
                     FirebaseFirestore.instance
                         .collection('Photo')
-                        .where('published', isEqualTo: false)
+                        .where('unbound', isEqualTo: true)
                         .orderBy('createdAt', descending: true)
                         .snapshots(),
                 builder: (context, snapshot) {
@@ -251,7 +242,6 @@ class _UploadGridPageState extends State<UploadGridPage> {
                     itemCount: docs.length,
                     itemBuilder: (context, index) {
                       final data = docs[index].data()! as Map<String, dynamic>;
-                      print(data);
                       return Card(
                         clipBehavior: Clip.antiAliasWithSaveLayer,
                         child: Stack(
@@ -269,8 +259,7 @@ class _UploadGridPageState extends State<UploadGridPage> {
                                       color: Colors.white,
                                       size: 20,
                                     ),
-                                    onPressed:
-                                        () => _editImage(data['filename']),
+                                    onPressed: () => _editImage(data),
                                   ),
                                   IconButton(
                                     icon: Icon(

@@ -25,6 +25,7 @@ final class Photo extends Equatable {
     this.flash = false,
     this.loc = '',
     this.text = const [],
+    this.unbound = false,
   });
 
   final String filename;
@@ -48,6 +49,7 @@ final class Photo extends Equatable {
   final bool? flash;
   final String? loc;
   final List<String>? text;
+  final bool unbound;
 
   @override
   List<Object?> get props => [
@@ -72,6 +74,7 @@ final class Photo extends Equatable {
     flash,
     loc,
     text,
+    unbound,
   ];
 
   Photo copyWith({
@@ -96,6 +99,7 @@ final class Photo extends Equatable {
     bool? flash,
     String? loc,
     List<String>? text,
+    bool? unbound,
   }) {
     return Photo(
       filename: filename ?? this.filename,
@@ -119,6 +123,7 @@ final class Photo extends Equatable {
       flash: flash ?? this.flash,
       loc: loc ?? this.loc,
       text: text ?? this.text,
+      unbound: unbound ?? this.unbound,
     );
   }
 
@@ -145,6 +150,7 @@ final class Photo extends Equatable {
       'flash': flash,
       'loc': loc,
       'text': text,
+      'unbound': unbound,
     };
   }
 
@@ -171,6 +177,7 @@ final class Photo extends Equatable {
       flash: map['flash'] as bool?,
       loc: map['loc'] as String?,
       text: map['text']?.cast<String>(),
+      unbound: map['unbound'] as bool? ?? false, // safe handling
     );
   }
 

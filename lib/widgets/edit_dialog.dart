@@ -57,13 +57,14 @@ class _EditDialogState extends State<EditDialog> {
                     child: const Text('Save'),
                     onPressed: () {
                       _formKey.currentState!.save();
+                      _record['unbound'] = false; // publish
                       Photo photo = Photo.fromMap(_record);
-                      if (_record['thumb'] == null) {
-                        PhotoBloc().add(PhotoAdd(photo));
-                        UploadphotoBloc().add(RemoveUploaded(photo));
-                      } else {
-                        PhotoBloc().add(PhotoUpdate(photo));
-                      }
+                      // if (_record['unbound'] == true) {
+                      PhotoBloc().add(PhotoUpdate(photo));
+                      // UploadphotoBloc().add(RemoveUploaded(photo));
+                      // } else {
+                      // PhotoBloc().add(PhotoUpdate(photo));
+                      // }
                       Navigator.of(context).pop();
                     },
                   ),
