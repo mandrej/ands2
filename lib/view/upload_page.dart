@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:ands2/auth/bloc/user_bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -26,7 +27,7 @@ class UploadGridPage extends StatefulWidget {
 class _UploadGridPageState extends State<UploadGridPage> {
   DropzoneViewController? _dropZoneController;
   final ImagePicker _picker = ImagePicker();
-  final user = FirebaseAuth.instance.currentUser!;
+  final user = UserBloc().state.user!;
   final storage = FirebaseStorage.instance;
   bool _isUploading = false;
 
