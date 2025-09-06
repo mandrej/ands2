@@ -54,7 +54,7 @@ class AppRouter extends RootStackRouter {
         return MultiBlocProvider(
           providers: [
             BlocProvider(create: (context) => UploadphotoBloc()),
-            BlocProvider(create: (context) => UploadTaskCubit()),
+            // BlocProvider(create: (context) => UploadTaskCubit()),
             BlocProvider(create: (context) => UserBloc()),
           ],
           child: UploadGridPage(),
