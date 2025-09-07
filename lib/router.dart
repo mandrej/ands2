@@ -5,7 +5,6 @@ import 'auth/bloc/user_bloc.dart';
 import 'photo/bloc/photo_bloc.dart';
 import 'find/cubit/find_cubit.dart';
 import 'photo/bloc/uploadphoto_bloc.dart';
-import 'task/cubit/upload_task_cubit.dart';
 import 'view/home_page.dart';
 import 'view/list_page.dart';
 // import 'view/add_page.dart';
@@ -54,7 +53,6 @@ class AppRouter extends RootStackRouter {
         return MultiBlocProvider(
           providers: [
             BlocProvider(create: (context) => UploadphotoBloc()),
-            // BlocProvider(create: (context) => UploadTaskCubit()),
             BlocProvider(create: (context) => UserBloc()),
           ],
           child: UploadGridPage(),

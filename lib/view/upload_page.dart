@@ -1,7 +1,6 @@
 import 'dart:io';
 
-import 'package:ands2/auth/bloc/user_bloc.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dropzone/flutter_dropzone.dart';
@@ -10,9 +9,10 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:intl/intl.dart';
 import 'package:mime/mime.dart';
 import 'package:uuid/uuid.dart';
+import '../auth/bloc/user_bloc.dart';
 import '../helpers/common.dart';
-import '../helpers/read_exif.dart';
 import '../photo/models/photo.dart';
+import '../photo/bloc/uploadphoto_bloc.dart';
 import '../widgets/edit_dialog.dart';
 
 class UploadGridPage extends StatefulWidget {
@@ -30,30 +30,22 @@ class _UploadGridPageState extends State<UploadGridPage> {
   final storage = FirebaseStorage.instance;
   bool _isUploading = false;
 
-  Future<void> _photoDefault(
-    String fileName,
-    String downloadUrl,
-    int? size,
-  ) async {
+  Photo _photoDefault(String fileName, String downloadUrl, int? size) {
     final now = DateTime.now();
-    final exif = await readExif(fileName);
-    await FirebaseFirestore.instance.collection('Photo').doc(fileName).set({
-      'filename': fileName,
-      'url': downloadUrl,
-      'size': size ?? 0,
-      'headline': 'No name',
-      'email': user.email,
-      'nick': nickEmail(user.email!),
-      'tags': <String>[],
-      'model': 'UNKNOWN',
-      'date': DateFormat(formatDate).format(now),
-      'year': now.year,
-      'month': now.month,
-      'day': now.day,
-      ...exif,
-      'unbound': true,
-      'createdAt': FieldValue.serverTimestamp(),
-    });
+    return Photo(
+      filename: fileName,
+      url: downloadUrl,
+      size: size ?? 0,
+      headline: 'No name',
+      email: user.email,
+      nick: nickEmail(user.email!),
+      tags: <String>[],
+      model: 'UNKNOWN',
+      date: DateFormat(formatDate).format(now),
+      year: now.year,
+      month: now.month,
+      day: now.day,
+    );
   }
 
   Future<void> _handleDroppedFiles(List<DropzoneFileInterface>? files) async {
@@ -81,7 +73,8 @@ class _UploadGridPageState extends State<UploadGridPage> {
           }
 
           String downloadUrl = await ref.getDownloadURL();
-          _photoDefault(fileName, downloadUrl, size);
+          final photo = _photoDefault(fileName, downloadUrl, size);
+          context.read<UploadphotoBloc>().add(AddUploaded(photo));
         }).toList();
     _errorHandling(uploadTasks);
   }
@@ -114,7 +107,8 @@ class _UploadGridPageState extends State<UploadGridPage> {
           }
 
           String downloadUrl = await ref.getDownloadURL();
-          _photoDefault(fileName, downloadUrl, size);
+          final photo = _photoDefault(fileName, downloadUrl, size);
+          context.read<UploadphotoBloc>().add(AddUploaded(photo));
         }).toList();
 
     _errorHandling(uploadTasks);
@@ -148,15 +142,15 @@ class _UploadGridPageState extends State<UploadGridPage> {
     }
   }
 
-  Future<void> _deleteImage(String filename) async {
-    print('Deleting image: $filename');
-    final DocumentReference docRef = FirebaseFirestore.instance
-        .collection('Photo')
-        .doc(filename);
-    final Reference imgRef = storage.ref().child(filename);
-    final Reference thumbRef = storage.ref().child(thumbFileName(filename));
+  Future<void> _deleteImage(Photo photo) async {
+    context.read<UploadphotoBloc>().add(RemoveUploaded(photo));
+    // setState(() {});
+
+    final Reference imgRef = storage.ref().child(photo.filename);
+    final Reference thumbRef = storage.ref().child(
+      thumbFileName(photo.filename),
+    );
     try {
-      await docRef.delete();
       await imgRef.delete();
       await thumbRef.delete();
     } catch (e) {
@@ -217,67 +211,68 @@ class _UploadGridPageState extends State<UploadGridPage> {
                 ),
               ),
             Expanded(
-              child: StreamBuilder<QuerySnapshot>(
-                stream:
-                    FirebaseFirestore.instance
-                        .collection('Photo')
-                        .where('unbound', isEqualTo: true)
-                        .orderBy('createdAt', descending: true)
-                        .snapshots(),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) {
-                    return Center(child: CircularProgressIndicator());
+              child: BlocConsumer<UploadphotoBloc, UploadphotoState>(
+                listener: (context, state) {
+                  if (state is UploadphotoLoaded) {
+                    setState(() {}); // Update the UI when the state changes
                   }
-                  final docs = snapshot.data!.docs;
-                  if (docs.isEmpty) {
+                },
+                builder: (context, state) {
+                  if (state is UploadphotoLoaded) {
+                    final photos = state.photos;
+                    if (photos.isEmpty) {
+                      return Center(child: Text("No images uploaded."));
+                    }
+                    return GridView.builder(
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount:
+                            MediaQuery.of(context).size.width ~/ 200,
+                        crossAxisSpacing: 4,
+                        mainAxisSpacing: 4,
+                        childAspectRatio: 1,
+                      ),
+                      itemCount: photos.length,
+                      itemBuilder: (context, index) {
+                        final photo = photos[index];
+                        return Card(
+                          clipBehavior: Clip.antiAliasWithSaveLayer,
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              Image.network(photo.url, fit: BoxFit.cover),
+                              Positioned(
+                                top: 4,
+                                right: 4,
+                                child: Column(
+                                  children: [
+                                    IconButton(
+                                      icon: Icon(
+                                        Icons.edit,
+                                        color: Colors.white,
+                                        size: 20,
+                                      ),
+                                      onPressed:
+                                          () => _editImage(photo.toMap()),
+                                    ),
+                                    IconButton(
+                                      icon: Icon(
+                                        Icons.delete,
+                                        color: Colors.red,
+                                        size: 20,
+                                      ),
+                                      onPressed: () => _deleteImage(photo),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    );
+                  } else {
                     return Center(child: Text("No images uploaded."));
                   }
-                  return GridView.builder(
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: MediaQuery.of(context).size.width ~/ 200,
-                      crossAxisSpacing: 4,
-                      mainAxisSpacing: 4,
-                      childAspectRatio: 1,
-                    ),
-                    itemCount: docs.length,
-                    itemBuilder: (context, index) {
-                      final data = docs[index].data()! as Map<String, dynamic>;
-                      return Card(
-                        clipBehavior: Clip.antiAliasWithSaveLayer,
-                        child: Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            Image.network(data['url'], fit: BoxFit.cover),
-                            Positioned(
-                              top: 4,
-                              right: 4,
-                              child: Column(
-                                children: [
-                                  IconButton(
-                                    icon: Icon(
-                                      Icons.edit,
-                                      color: Colors.white,
-                                      size: 20,
-                                    ),
-                                    onPressed: () => _editImage(data),
-                                  ),
-                                  IconButton(
-                                    icon: Icon(
-                                      Icons.delete,
-                                      color: Colors.red,
-                                      size: 20,
-                                    ),
-                                    onPressed:
-                                        () => _deleteImage(data['filename']),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  );
                 },
               ),
             ),
